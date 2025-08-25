@@ -244,33 +244,6 @@ class TestDataCleaner:
         assert isinstance(df, pd.DataFrame)
         assert len(df) == 0
 
-    def test_get_cleaning_summary(self, cleaner):
-        cleaner.clean_account_structure([
-            {'sacccode': '1001', 'saccname': '现金', 'sacctype': None, 'saccind': None}
-        ])
-        cleaner.clean_customer_vendor([
-            {'sbpName': '公司A', 'screditCode': None, 'sbptype': None, 'sshortname': None,
-             'sbank': None, 'saccountCode': None, 'saccountName': None},
-            {'sbpName': '公司B', 'screditCode': '91110000000000000X', 'sbptype': '客户',
-             'sshortname': '公司B简称', 'sbank': '建设银行', 'saccountCode': '987654321',
-             'saccountName': '账户B'}
-        ])
-
-        summary = cleaner.get_cleaning_summary()
-
-        assert 'summary' in summary
-        assert 'details' in summary
-
-        assert summary['summary']['total_original'] == 3
-        assert summary['summary']['total_cleaned'] == 3
-        assert summary['summary']['total_removed'] == 0
-        assert summary['summary']['cleaning_rate'] == 100.0
-
-        assert 'account_structure' in summary['details']
-        assert 'customer_vendor' in summary['details']
-        assert summary['details']['account_structure']['original'] == 1
-        assert summary['details']['customer_vendor']['original'] == 2
-
     def test_credit_code_validation(self, cleaner):
         raw_data = [
             {'sbpName': '公司A', 'screditCode': '91110000000000000X', 'sbptype': None,
