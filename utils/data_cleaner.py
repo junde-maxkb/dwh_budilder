@@ -7,7 +7,7 @@ from loguru import logger
 from utils.monitor import execution_monitor
 
 try:
-    if pd.__version__ <= '2.2.0':
+    if pd.__version__ < '2.2.0':
         warnings.warn("pandas 2.2.0 及以下版本存在向下转换问题，建议升级到2.3.0及以上版本以避免潜在问题。", UserWarning)
     pd.set_option('future.no_silent_downcasting', True)
 except Exception as e:
