@@ -1,9 +1,10 @@
 import json
+import requests
 from typing import Dict, List, Optional, Any
 from fake_useragent import UserAgent
-import requests
 from loguru import logger
 from pydantic import BaseModel
+from utils.monitor import execution_monitor, retry_with_monitor
 
 
 class APIResponse(BaseModel):
@@ -26,6 +27,8 @@ class FinanceAPIClient:
             'User-Agent': UserAgent().random
         })
 
+    @execution_monitor(stage="api_request", timeout=60, track_memory=True)
+    @retry_with_monitor(max_retries=2, delay=1.0, backoff=2.0)
     def _make_request(self, endpoint: str, params: Dict[str, Any]) -> APIResponse:
         url = f"{self.base_url}{endpoint}"
 
@@ -60,6 +63,7 @@ class FinanceAPIClient:
             logger.error(f"未知错误: {endpoint}, 错误: {str(e)}")
             raise
 
+    @execution_monitor(stage="data_fetch", extra_data={"api_type": "account_structure"})
     def get_account_structure(self, year: str, company_code: str) -> List[Dict[str, Any]]:
         """获取某年度会计科目结构"""
         response = self._make_request("/Cw6Api/GetAcc", {
@@ -68,6 +72,7 @@ class FinanceAPIClient:
         })
         return response.result or []
 
+    @execution_monitor(stage="data_fetch", extra_data={"api_type": "subject_dimension"})
     def get_subject_dimension_relationship(self, year: str, company_code: str) -> List[Dict[str, Any]]:
         """获取科目辅助核算对应关系"""
         response = self._make_request("/Cw6Api/Subject_Dimension_Relationship", {
@@ -76,6 +81,7 @@ class FinanceAPIClient:
         })
         return response.result or []
 
+    @execution_monitor(stage="data_fetch", extra_data={"api_type": "customer_vendor"})
     def get_customer_vendor_dict(self, company_code: str) -> List[Dict[str, Any]]:
         """获取客商字典"""
         response = self._make_request("/Cw6Api/Get_PC", {
@@ -83,6 +89,7 @@ class FinanceAPIClient:
         })
         return response.result or []
 
+    @execution_monitor(stage="data_fetch", extra_data={"api_type": "voucher_list"})
     def get_voucher_list(self, company_code: str, period_code: str) -> List[Dict[str, Any]]:
         """获取凭证目录"""
         response = self._make_request("/Cw6Api/Get_Voucher", {
@@ -91,6 +98,7 @@ class FinanceAPIClient:
         })
         return response.result or []
 
+    @execution_monitor(stage="data_fetch", extra_data={"api_type": "voucher_detail"})
     def get_voucher_detail(self, company_code: str, period_code: str) -> List[Dict[str, Any]]:
         """获取凭证明细"""
         response = self._make_request("/Cw6Api/Get_Voucher_Detail", {
@@ -99,6 +107,7 @@ class FinanceAPIClient:
         })
         return response.result or []
 
+    @execution_monitor(stage="data_fetch", extra_data={"api_type": "voucher_dim_detail"})
     def get_voucher_dim_detail(self, company_code: str, period_code: str) -> List[Dict[str, Any]]:
         """获取凭证辅助明细"""
         response = self._make_request("/Cw6Api/Get_Voucher_Dim_Detail", {
@@ -107,6 +116,7 @@ class FinanceAPIClient:
         })
         return response.result or []
 
+    @execution_monitor(stage="data_fetch", extra_data={"api_type": "balance"})
     def get_balance(self, company_code: str, period_code: str) -> List[Dict[str, Any]]:
         """获取科目余额"""
         response = self._make_request("/Cw6Api/Get_Balance", {
@@ -115,6 +125,7 @@ class FinanceAPIClient:
         })
         return response.result or []
 
+    @execution_monitor(stage="data_fetch", extra_data={"api_type": "aux_balance"})
     def get_aux_balance(self, company_code: str, period_code: str) -> List[Dict[str, Any]]:
         """获取辅助余额"""
         response = self._make_request("/Cw6Api/Get_Aux_Balance", {
