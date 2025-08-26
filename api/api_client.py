@@ -133,3 +133,8 @@ class FinanceAPIClient:
             "periodCode": period_code
         })
         return response.result or []
+
+    def close(self):
+        """关闭会话"""
+        if self.session:
+            self.session.close()
