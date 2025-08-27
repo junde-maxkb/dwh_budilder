@@ -4,7 +4,6 @@ import warnings
 from datetime import datetime
 from typing import Dict, List, Any
 from loguru import logger
-from utils.monitor import execution_monitor
 
 try:
     if pd.__version__ < '2.2.0':
@@ -30,7 +29,6 @@ class DataCleaner:
     def __init__(self):
         self.cleaning_stats = {}
 
-    @execution_monitor(stage="data_clean", track_memory=True, extra_data={"data_type": "account_structure"})
     def clean_account_structure(self, raw_data: List[Dict[str, Any]]) -> pd.DataFrame:
         """
         清洗会计科目结构数据
@@ -66,7 +64,6 @@ class DataCleaner:
         logger.info(f"会计科目结构数据清洗完成: 原始{original_count}条, 清洗后{cleaned_count}条, 移除0条")
         return df
 
-    @execution_monitor(stage="data_clean", track_memory=True, extra_data={"data_type": "subject_dimension"})
     def clean_subject_dimension(self, raw_data: List[Dict[str, Any]]) -> pd.DataFrame:
         """
         清洗科目辅助核算关系数据
@@ -99,7 +96,6 @@ class DataCleaner:
         logger.info(f"科目辅助核算关系数据清洗完成: 原始{original_count}条, 清洗后{cleaned_count}条, 移除0条")
         return df
 
-    @execution_monitor(stage="data_clean", track_memory=True, extra_data={"data_type": "customer_vendor"})
     def clean_customer_vendor(self, raw_data: List[Dict[str, Any]]) -> pd.DataFrame:
         """
         清洗客商字典数据
@@ -155,7 +151,6 @@ class DataCleaner:
         logger.info(f"客商字典数据清洗完成: 原始{original_count}条, 清洗后{cleaned_count}条, 移除0条")
         return df
 
-    @execution_monitor(stage="data_clean", track_memory=True, extra_data={"data_type": "voucher_list"})
     def clean_voucher_list(self, raw_data: List[Dict[str, Any]]) -> pd.DataFrame:
         """
         清洗凭证目录数据
@@ -197,7 +192,6 @@ class DataCleaner:
         logger.info(f"凭证目录数据清洗完成: 原始{original_count}条, 清洗后{cleaned_count}条, 移除0条")
         return df
 
-    @execution_monitor(stage="data_clean", track_memory=True, extra_data={"data_type": "voucher_detail"})
     def clean_voucher_detail(self, raw_data: List[Dict[str, Any]]) -> pd.DataFrame:
         """
         清洗凭证明细数据
@@ -242,7 +236,6 @@ class DataCleaner:
         logger.info(f"凭证明细数据清洗完成: 原始{original_count}条, 清洗后{cleaned_count}条, 移除0条")
         return df
 
-    @execution_monitor(stage="data_clean", track_memory=True)
     def clean_balance_data(self, raw_data: List[Dict[str, Any]], data_type: str = 'balance') -> pd.DataFrame:
         """
         清洗余额数据（通用方法，适用于科目余额和辅助余额）
