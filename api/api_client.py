@@ -136,6 +136,7 @@ class AutoFinancialReportAPI:
         self.username = username
         self.password = password
         self.base_url = "http://10.3.102.141/shj/vue/api/rp/query_output/query_report_new"
+        self.report_url = "http://10.3.102.141/shj/vue/api/rp"
         self.session = requests.Session()
 
         self.access_token = None
@@ -152,6 +153,18 @@ class AutoFinancialReportAPI:
             'Accept-Language': 'zh-CN,zh;q=0.9'
         }
 
+        self.report_headers = {
+            "Connection": "keep-alive",
+            "Accept": "application/json, text/plain, */*",
+            "X-Access-Token": self.access_token,
+            "X-Access-Token-Old": self.token,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/97.0.4692.71 Safari/537.36",
+            "Content-Type": "application/json;charset=UTF-8",
+            "Accept-Language": "zh-CN,zh;q=0.9",
+            "Cookie": self.cookies,
+        }
         logger.info(f"初始化自动化财务报表API客户端, 用户: {username}")
 
     def login_and_get_tokens(self) -> bool:

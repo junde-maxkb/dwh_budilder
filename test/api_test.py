@@ -295,6 +295,7 @@ class AutoFinancialReportAPI:
         self.username = username
         self.password = password
         self.base_url = "http://10.3.102.141/shj/vue/api/rp/query_output/query_report_new"
+        self.report_url = "http://10.3.102.141/shj/vue/api/rp"
         self.session = requests.Session()
 
         self.access_token = None

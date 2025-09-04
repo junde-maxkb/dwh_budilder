@@ -1,0 +1,235 @@
+任务接口
+curl 'http://10.3.102.141/shj/vue/api/rp/current_task/list?TIMESTAMP=1756884644529&TOKEN=b10f6d285eff402083dc2fc9db8abf85' \
+  -H 'Connection: keep-alive' \
+  -H 'Accept: application/json, text/plain, */*' \
+  -H 'X-Access-Token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJvcmdOYW1lIjoi5LiK5rW35bGA6ZuG5Zui5YWs5Y-4IiwiaXNCaXpVc2VyIjpmYWxzZSwiYXBwaWQiOiJGQ0ZBIiwib3JnY29kZSI6IjJTSDAwMDAwMDEiLCJpc0F1ZGl0IjpmYWxzZSwibG9naW5EYXRlIjoxNzU2NzcxMjAwLCJ1c2VyY29kZSI6IkxpSiIsImV4cCI6MTc1Njk3MDczOX0.mdfdkblXZxaqqDx-CeFPk0odfPilTs0cM2UVFWHXPZ0' \
+  -H 'X-Access-Token-Old: b10f6d285eff402083dc2fc9db8abf85' \
+  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36' \
+  -H 'Content-Type: application/json;charset=UTF-8' \
+  -H 'Origin: http://10.3.102.141' \
+  -H 'Referer: http://10.3.102.141/shj/vue/?1756884626509af581fd4c6e3465a367b35ba638d53cf' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9' \
+  -H $'Cookie: tt=23c90a28d09h4k2==; JSESSIONID=zegOd3ddR9Nz5NvZ7KapnRI9fubNoMABWxfC-inOd6g1RJ_Hp2_v\u0021-954665211' \
+  --data-raw '{}' \
+  --compressed \
+  --insecure
+
+返回数据示例
+{"result":[{
+  "companyDimenSionId": "PDCOMPANY",
+  "createCompanyId": "1000000000",
+  "createTime": "2025-01-24 14:27:14",
+  "faBuStatus": 1,
+  "id": "8a8308fa93f377c1019496fe4657222e",
+  "isBaseData": 0,
+  "isDelete": 0,
+  "isLocked": 0,
+  "isManage": 0,
+  "mainId": null,
+  "periodId": "678f2d2a2bac40a1bf2afea99b282215",
+  "releaseCompanyId": "1000000000",
+  "remark": null,
+  "taskCode": "2025-YB",
+  "taskName": "2025年月报",
+  "typeId": "8a8308fb8c8c7e11018d38dddcac24fd",
+  "xiaFaStatus": 1,
+  "year": "2025",
+  "createUserCode": "liuyong",
+  "button": null,
+  "periodName": "月报",
+  "fabu": null,
+  "periodCode": "NB",
+  "releaseCompanyName": "国铁集团",
+  "statusName": null,
+  "periodDetailId": null,
+  "periodDetailName": null,
+  "dimCode": "PDCOMPANY",
+  "dimName": "行政维度",
+  "flag": null,
+  "groupId": "1-8a83ccf58d671c50018db0ee15473d36"
+}]}
+
+月份 需要任务的 periodId
+curl 'http://10.3.102.141/shj/vue/api/rp/period/queryDetail?TIMESTAMP=1756862643387&TOKEN=b10f6d285eff402083dc2fc9db8abf85&periodId=678f2d2a2bac40a1bf2afea99b282215' \
+  -H 'Connection: keep-alive' \
+  -H 'Accept: application/json, text/plain, */*' \
+  -H 'X-Access-Token-Old: b10f6d285eff402083dc2fc9db8abf85' \
+  -H 'X-Access-Token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJvcmdOYW1lIjoi5LiK5rW35bGA6ZuG5Zui5YWs5Y-4IiwiaXNCaXpVc2VyIjpmYWxzZSwiYXBwaWQiOiJGQ0ZBIiwib3JnY29kZSI6IjJTSDAwMDAwMDEiLCJpc0F1ZGl0IjpmYWxzZSwibG9naW5EYXRlIjoxNzU2NzcxMjAwLCJ1c2VyY29kZSI6IkxpSiIsImV4cCI6MTc1Njk0ODUxNn0.ESaSR8QDNTfbzsWhT9r2IrSQOMEeEsw3dWXU5icwBY4' \
+  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36' \
+  -H 'Referer: http://10.3.102.141/shj/vue/?17568623811083ec87fcad9ca52101354e3b38370b8ff' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9' \
+  -H $'Cookie: tt=23c90a28d09h4k2==; JSESSIONID=eeYNJE7VQYL-CrAtVEinG4IDWpENIGWQH18mgs4ZxO8NeAkZXcq5\u0021-898623582' \
+  --compressed \
+  --insecure
+
+
+返回数据
+[{
+  "id": "6e9046bdcdbb465f823d08e4529821b9",
+  "periodId": "678f2d2a2bac40a1bf2afea99b282215",
+  "periodDetailCode": "0101",
+  "periodDetailName": "一月份",
+  "beginDate": "01-01",
+  "endDate": "01-31",
+  "sortCode": 1,
+  "remark": null,
+  "createTime": null
+}]
+
+
+报表 任务ID 和 月份 ID 请求
+curl 'http://10.3.102.141/shj/vue/api/rp/query_output/report_list?TIMESTAMP=1756862644178&TOKEN=b10f6d285eff402083dc2fc9db8abf85&companyCode=2SH0000001&companyParentCode=&groupId=&periodDetailId=6e9046bdcdbb465f823d08e4529821b9&taskId=8a8308fa93f377c1019496fe4657222e' \
+  -H 'Connection: keep-alive' \
+  -H 'Accept: application/json, text/plain, */*' \
+  -H 'X-Access-Token-Old: b10f6d285eff402083dc2fc9db8abf85' \
+  -H 'X-Access-Token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJvcmdOYW1lIjoi5LiK5rW35bGA6ZuG5Zui5YWs5Y-4IiwiaXNCaXpVc2VyIjpmYWxzZSwiYXBwaWQiOiJGQ0ZBIiwib3JnY29kZSI6IjJTSDAwMDAwMDEiLCJpc0F1ZGl0IjpmYWxzZSwibG9naW5EYXRlIjoxNzU2NzcxMjAwLCJ1c2VyY29kZSI6IkxpSiIsImV4cCI6MTc1Njk0ODc1MX0.jc_1pmjmrLY2LG--bbmtILtBBrbcIiQP3gVu-P9qyXM' \
+  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36' \
+  -H 'Referer: http://10.3.102.141/shj/vue/?17568623811083ec87fcad9ca52101354e3b38370b8ff' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9' \
+  -H $'Cookie: tt=23c90a28d09h4k2==; JSESSIONID=eeYNJE7VQYL-CrAtVEinG4IDWpENIGWQH18mgs4ZxO8NeAkZXcq5\u0021-898623582' \
+  --compressed \
+  --insecure
+
+返回数据示例
+[{
+  "reportId": "1883402500891852801",
+  "reportCode": "2024年防暑降温、送清凉专项慰问统计表",
+  "reportName": "上海局2024年防暑降温、送清凉专项慰问统计表",
+  "reportType": "0",
+  "uploadId": null,
+  "dataCompanyCode": "2SH0000001",
+  "handingStatus": 0,
+  "hasData": false,
+  "lock": false,
+  "init": "SHJ2024NFSJW、SQLZXWWTJB",
+  "monetaryUnitId": "3",
+  "createCompanyCode": null,
+  "createCompanyName": null
+},]
+
+单位名称 任务的ID 和 月份ID 请求
+curl 'http://10.3.102.141/shj/vue/api/rp/company/all_for_parent_tree?TIMESTAMP=1756862643620&TOKEN=b10f6d285eff402083dc2fc9db8abf85&groupId=&taskId=8a8308fa93f377c1019496fe4657222e&periodDetailId=6e9046bdcdbb465f823d08e4529821b9' \
+  -H 'Connection: keep-alive' \
+  -H 'Accept: application/json, text/plain, */*' \
+  -H 'X-Access-Token-Old: b10f6d285eff402083dc2fc9db8abf85' \
+  -H 'X-Access-Token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJvcmdOYW1lIjoi5LiK5rW35bGA6ZuG5Zui5YWs5Y-4IiwiaXNCaXpVc2VyIjpmYWxzZSwiYXBwaWQiOiJGQ0ZBIiwib3JnY29kZSI6IjJTSDAwMDAwMDEiLCJpc0F1ZGl0IjpmYWxzZSwibG9naW5EYXRlIjoxNzU2NzcxMjAwLCJ1c2VyY29kZSI6IkxpSiIsImV4cCI6MTc1Njk0ODc1MH0.NWQQaqh0auXOBS7zzDwXf9eS6YYvIIyTnlAIRG6uboI' \
+  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36' \
+  -H 'Referer: http://10.3.102.141/shj/vue/?17568623811083ec87fcad9ca52101354e3b38370b8ff' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9' \
+  -H $'Cookie: tt=23c90a28d09h4k2==; JSESSIONID=eeYNJE7VQYL-CrAtVEinG4IDWpENIGWQH18mgs4ZxO8NeAkZXcq5\u0021-898623582' \
+  --compressed \
+  --insecure
+
+返回数据示例
+{"result":[{
+  "id": "2SH0000001",
+  "parentId": "1000000000",
+  "label": null,
+  "parentLabel": null,
+  "levelList": [
+    "2SH0000001"
+  ],
+  "children": [
+    {
+      "id": "2SH000603A",
+      "parentId": "2SH0000001",
+      "label": null,
+      "parentLabel": null,
+      "levelList": [
+        "2SH0000001",
+        "2SH000603A"
+      ],
+      "children": null,
+      "last": true,
+      "fullCode": null,
+      "roadCode": null,
+      "bisVirtual": null,
+      "companyTypeName": null,
+      "jsCompany": null,
+      "ID": "2SH000603A",
+      "SCOMPANY_CODE": "2SH000603A",
+      "SCOMPANY_TYPE": "1",
+      "SPARENT_CODE": "2SH0000001",
+      "SSHORT_NAME": "徐州车务段",
+      "FULL_NAME": "中国铁路上海局集团有限公司徐州车务段",
+      "SSPELLING_CODE": "101",
+      "NDISPLAYNO": 1
+    },
+    {
+      "id": "2SH031D991",
+      "parentId": "2SH0000001",
+      "label": null,
+      "parentLabel": null,
+      "levelList": [
+        "2SH0000001",
+        "2SH031D991"
+      ],
+      "children": [
+        {
+          "id": "2SH031E991",
+          "parentId": "2SH031D991",
+          "label": null,
+          "parentLabel": null,
+          "levelList": [
+            "2SH0000001",
+            "2SH031D991",
+            "2SH031E991"
+          ],
+          "children": null,
+          "last": true,
+          "fullCode": null,
+          "roadCode": null,
+          "bisVirtual": null,
+          "companyTypeName": null,
+          "jsCompany": null,
+          "ID": "2SH031E991",
+          "SCOMPANY_CODE": "2SH031E991",
+          "SCOMPANY_TYPE": "1",
+          "SPARENT_CODE": "2SH031D991",
+          "SSHORT_NAME": "上海局集团有限公司直属机关（本级）",
+          "FULL_NAME": "上海局集团有限公司直属机关（本级）",
+          "SSPELLING_CODE": "9999",
+          "NDISPLAYNO": 2
+        }
+      ],
+      "last": false,
+      "fullCode": null,
+      "roadCode": null,
+      "bisVirtual": null,
+      "companyTypeName": null,
+      "jsCompany": null,
+      "ID": "2SH031D991",
+      "SCOMPANY_CODE": "2SH031D991",
+      "SCOMPANY_TYPE": "1",
+      "SPARENT_CODE": "2SH0000001",
+      "SSHORT_NAME": "上海局集团有限公司直属机关（汇总）",
+      "FULL_NAME": "上海局集团有限公司直属机关（汇总）",
+      "SSPELLING_CODE": "9999",
+      "NDISPLAYNO": 1
+    },
+    {
+      "id": "2SH000103B",
+      "parentId": "2SH0000001",
+      "label": null,
+      "parentLabel": null,
+      "levelList": [
+        "2SH0000001",
+        "2SH000103B"
+      ],
+      "children": null,
+      "last": true,
+      "fullCode": null,
+      "roadCode": null,
+      "bisVirtual": null,
+      "companyTypeName": null,
+      "jsCompany": null,
+      "ID": "2SH000103B",
+      "SCOMPANY_CODE": "2SH000103B",
+      "SCOMPANY_TYPE": "1",
+      "SPARENT_CODE": "2SH0000001",
+      "SSHORT_NAME": "淮北车务段",
+      "FULL_NAME": "中国铁路上海局集团有限公司淮北车务段",
+      "SSPELLING_CODE": "102",
+      "NDISPLAYNO": 2
+    }
+}
