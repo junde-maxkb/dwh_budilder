@@ -3,7 +3,6 @@ import logging
 import os
 import subprocess
 import time
-import requests
 from typing import Dict, List, Optional, Tuple, Union
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -120,7 +119,7 @@ def get_latest_token(driver) -> Optional[Union[str, Dict[str, str]]]:
     return token_dict
 
 
-def get_automation_data(username: str = "lijin5", password: str = "Qaz.123456789.") \
+def get_automation_data(username: str, password: str) \
         -> Tuple[Optional[str], Optional[List[Dict]], Optional[str]]:
     logger.info("=" * 60)
     logger.info("开始执行自动化流程获取数据")
@@ -275,7 +274,7 @@ def get_automation_data(username: str = "lijin5", password: str = "Qaz.123456789
 
 
 if __name__ == '__main__':
-    token, cookies, user_agent = get_automation_data()
+    token, cookies, user_agent = get_automation_data("lijin5", "Qaz.123456789.")
     if token and cookies and user_agent:
         print("=" * 60)
         print("登陆成功获取数据:")

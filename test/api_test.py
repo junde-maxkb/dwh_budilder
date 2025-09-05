@@ -6,6 +6,7 @@ import sys
 import time
 import requests
 from typing import Dict, List, Optional, Tuple, Union, Any
+from requests import RequestException
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
@@ -255,6 +256,9 @@ def get_automation_data(username: str = "lijin5", password: str = "Qaz.123456789
                  )))
             confirm_button.click()
             logger.info("更换成功")
+            time.sleep(2)
+            title = driver.find_element(By.CSS_SELECTOR, "span.analyze").get_attribute("title")
+            logger.info(title)
         except Exception as e:
             logger.error("点击失败：", e)
 
@@ -330,9 +334,10 @@ class AutoFinancialReportAPI:
                 self.token = cookie_dict.get('token', cookie_dict.get('TOKEN'))
             elif isinstance(token_data, dict):
                 for key, value in token_data.items():
-                    if 'X-Access-Token' in key or 'token' in key.lower():
+                    if 'X-Access-Token' in key:
                         self.access_token = value
-                        break
+                    elif 'token' in key:
+                        self.token = value
 
             self.cookies = cookies
             self.user_agent = user_agent
@@ -363,11 +368,43 @@ class AutoFinancialReportAPI:
 
         logger.info("Session配置已更新")
 
-    def _make_api_request(self, report_ids: List[str], company_code: str = "2SH000303B",
-                          company_parent_code: str = "2SH0000001") -> Dict[str, Any]:
-
+    def _get_request_headers(self) -> Dict[str, str]:
+        """获取请求头"""
         if not self.access_token:
             raise ValueError("未获取到access_token，请先执行登录")
+
+        headers = {
+            "Connection": "keep-alive",
+            "Accept": "application/json, text/plain, */*",
+            "X-Access-Token": self.access_token,
+            "X-Access-Token-Old": self.token or "",
+            "User-Agent": self.user_agent or "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                                             "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                             "Chrome/97.0.4692.71 Safari/537.36",
+            "Content-Type": "application/json;charset=UTF-8",
+            "Accept-Language": "zh-CN,zh;q=0.9",
+        }
+
+        if self.cookies:
+            if isinstance(self.cookies, list):
+                cookie_dict = {cookie['name']: cookie['value'] for cookie in self.cookies}
+                cookie_str = '; '.join([f"{name}={value}" for name, value in cookie_dict.items()])
+                headers['Cookie'] = cookie_str
+            elif isinstance(self.cookies, str):
+                headers['Cookie'] = self.cookies
+        logger.info(headers)
+        return headers
+
+    def _make_api_request(self, report_ids: List[str], company_code: str, company_parent_code: str) -> Dict[str, Any]:
+        """
+        发送API请求获取报表数据
+        :param report_ids: 报表的ID列表
+        :param company_code: 单位ID
+        :param company_parent_code: 单位的父ID，默认值为"2SH0000001"
+        :return:
+        """
+        if not self.access_token:
+            raise ValueError("未获取到access_token��请先执行登录")
 
         timestamp = int(time.time() * 1000)
 
@@ -405,48 +442,136 @@ class AutoFinancialReportAPI:
             logger.info(f"API请求成功，状态码: {response.status_code}")
             return result
 
-        except requests.exceptions.RequestException as e:
+        except RequestException as e:
             logger.error(f"API请求失败: {e}")
-            raise
+            raise RequestException(f"API请求失败: {e}")
         except Exception as e:
             logger.error(f"处理API响应时出错: {e}")
-            raise
+            raise Exception(f"处理API响应时出错: {e}")
 
-    def get_financial_status(self, company_code: str = "2SH000303B",
-                             company_parent_code: str = "2SH0000001") -> Dict[str, Any]:
-
-        logger.info("获取财务状况数据...")
-        return self._make_api_request(["1883402501890777089"], company_code, company_parent_code)
-
-    def get_monthly_report_01(self, company_code: str = "2SH000303B",
-                              company_parent_code: str = "2SH0000001") -> Dict[str, Any]:
-
-        logger.info("获取月报01表数据...")
-        return self._make_api_request(["1882677349741477890"], company_code, company_parent_code)
-
-    def get_monthly_report_04(self, company_code: str = "2SH000303B",
-                              company_parent_code: str = "2SH0000001") -> Dict[str, Any]:
-        logger.info("获取月报04表数据...")
-        return self._make_api_request(["1882677386643509249"], company_code, company_parent_code)
-
-    def get_all_reports(self, company_code: str = "2SH000303B",
-                        company_parent_code: str = "2SH0000001") -> Dict[str, Dict[str, Any]]:
-
-        logger.info("开始获取所有报表数据...")
-
-        results = {}
+    def get_tasks(self) -> List[Dict[str, Any]]:
+        """获取任务列表"""
+        url = f"{self.report_url}/current_task/list"
+        headers = self._get_request_headers()
 
         try:
-            results['financial_status'] = self.get_financial_status(company_code, company_parent_code)
-            results['monthly_report_01'] = self.get_monthly_report_01(company_code, company_parent_code)
-            results['monthly_report_04'] = self.get_monthly_report_04(company_code, company_parent_code)
-
-            logger.info("所有报表数据获取完成")
-            return results
-
+            logger.info("获取任务列表...")
+            resp = self.session.post(url, headers=headers, json={}, verify=False)
+            resp.raise_for_status()
+            result = resp.json().get("result", [])
+            logger.info(f"成功获取 {len(result)} 个任务")
+            return result
         except Exception as e:
-            logger.error(f"获取报表数据时出错: {e}")
+            logger.error(f"获取任务列表失败: {e}")
             raise
+
+    def get_period_details(self, period_id: str) -> List[Dict[str, Any]]:
+        """获取月份列表（需要任务里的 periodId）"""
+        url = f"{self.report_url}/period/queryDetail"
+        headers = self._get_request_headers()
+        params = {"periodId": period_id}
+
+        try:
+            logger.info(f"获取月份列表，periodId: {period_id}")
+            resp = self.session.get(url, headers=headers, params=params, verify=False)
+            resp.raise_for_status()
+            result = resp.json()
+            if isinstance(result, list):
+                logger.info(f"成功获取 {len(result)} 个月份")
+                return result
+            elif isinstance(result, dict) and "result" in result:
+                periods = result["result"]
+                logger.info(f"成功获取 {len(periods)} 个月份")
+                return periods
+            else:
+                logger.info(f"成功获取月份数据")
+                return result if isinstance(result, list) else [result]
+        except Exception as e:
+            logger.error(f"获取月份列表失败: {e}")
+            raise
+
+    def get_reports(self, company_code: str, period_detail_id: str, task_id: str) -> List[Dict[str, Any]]:
+        """获取报表列表"""
+        url = f"{self.report_url}/query_output/report_list"
+        headers = self._get_request_headers()
+        params = {
+            "companyCode": company_code,
+            "companyParentCode": "",
+            "groupId": "",
+            "periodDetailId": period_detail_id,
+            "taskId": task_id,
+        }
+
+        try:
+            logger.info(f"获取报表列表，公司: {company_code}, 月份: {period_detail_id}, 任务: {task_id}")
+            resp = self.session.get(url, headers=headers, params=params, verify=False)
+            resp.raise_for_status()
+            result = resp.json()
+            if isinstance(result, list):
+                logger.info(f"成功获取 {len(result)} 个报表")
+                return result
+            elif isinstance(result, dict) and "result" in result:
+                reports = result["result"]
+                logger.info(f"成功获取 {len(reports)} 个报表")
+                return reports
+            else:
+                logger.info(f"成功获取报表数据")
+                return result if isinstance(result, list) else [result]
+        except Exception as e:
+            logger.error(f"获取报表列表失败: {e}")
+            raise
+
+    def get_companies(self, task_id: str, period_detail_id: str) -> List[Dict[str, Any]]:
+        """获取单位树结构"""
+        url = f"{self.report_url}/company/all_for_parent_tree"
+        headers = self._get_request_headers()
+        params = {
+            "TIMESTAMP": int(time.time() * 1000),
+            "TOKEN": self.token or "",
+            "groupId": "",
+            "taskId": task_id,
+            "periodDetailId": period_detail_id,
+        }
+
+        try:
+            logger.info(f"获取单位树结构，任务: {task_id}, 月份: {period_detail_id}")
+            resp = self.session.get(url, headers=headers, params=params, verify=False)
+            resp.raise_for_status()
+            result = resp.json()
+            logger.info(result)
+            if isinstance(result, dict) and "result" in result:
+                companies = [result["result"][0]]
+                logger.info(f"成功获取单位树结构，包含 {len(companies)} 个顶级单位")
+                return companies
+            elif isinstance(result, list):
+                logger.info(f"成功获取单位树结构，包含 {len(result)} 个单位")
+                return result
+            else:
+                logger.info(f"成功获取单位数据")
+                return [result] if result else []
+        except Exception as e:
+            logger.error(f"获取单位树结构失败: {e}")
+            raise
+
+    def _extract_all_companies(self, companies: List[Dict[str, Any]]) -> List[Tuple[str, str]]:
+        """从树结构中提取所有公司的ID和父ID"""
+        result = []
+
+        def extract_recursive(company_list: List[Dict[str, Any]]):
+            for company in company_list:
+                company_id = company.get("id") or company.get("SCOMPANY_CODE")
+                parent_id = company.get("parentId") or company.get("SPARENT_CODE")
+
+                if company_id and parent_id:
+                    result.append((company_id, parent_id))
+
+                children = company.get("children", [])
+                if children:
+                    extract_recursive(children)
+
+        extract_recursive(companies)
+        logger.info(f"从单位树中提取出 {len(result)} 个公司信息")
+        return result
 
     def parse_table_data(self, api_response: Dict[str, Any]) -> List[List[str]]:
         try:
@@ -477,30 +602,112 @@ class AutoFinancialReportAPI:
             logger.error(f"解析表格数据时出错: {e}")
             return []
 
-    def execute_full_workflow(self, company_code: str = "2SH000303B",
-                              company_parent_code: str = "2SH0000001") -> Tuple[bool, Dict[str, Any]]:
-
-        logger.info("开始执行完整的数据获取工作流程...")
+    def get_all_data_by_task(self, task_name_filter: str = None) -> Dict[str, Any]:
+        """
+        根据任务名称获取所有相关数据
+        :param task_name_filter: 任务名称筛选条件，如果为None则使用第一个任务
+        :return: 包含所有数据的字典
+        """
+        if not self.access_token:
+            logger.info("未登录，开始自动登录...")
+            if not self.login_and_get_tokens():
+                raise ValueError("自动登录失败")
 
         try:
-            if not self.login_and_get_tokens():
-                return False, {"error": "登录失败"}
+            logger.info("开始获取所有数据...")
+            # 获取任务列表
+            tasks = self.get_tasks()
+            logger.info(f"获取到 {len(tasks)} 个任务")
+            if not tasks:
+                raise ValueError("未找到任何任务")
 
-            all_reports = self.get_all_reports(company_code, company_parent_code)
+            logger.info(f"筛选指定任务: {task_name_filter}")
+            # 筛选任务
+            selected_task = None
+            if task_name_filter:
+                for task in tasks:
+                    if task_name_filter in task.get("taskName", ""):
+                        selected_task = task
+                        break
+                if not selected_task:
+                    logger.warning(f"未找到包含'{task_name_filter}'的任务，使用第一个任务")
+                    selected_task = tasks[0]
+            else:
+                selected_task = tasks[0]
 
-            parsed_data = {}
-            for report_name, report_data in all_reports.items():
-                parsed_data[report_name] = {
-                    'raw_data': report_data,
-                    'parsed_table': self.parse_table_data(report_data)
-                }
+            logger.info(f"选择任务: {selected_task.get('taskName', '未知任务')}")
 
-            logger.info("完整工作流程执行成功")
-            return True, parsed_data
+            task_id = selected_task["id"]
+            period_id = selected_task["periodId"]
+            group_id = selected_task.get("groupId", "")
+            logger.info(f"任务ID: {task_id}, 月份ID: {period_id}, 组ID: {group_id}")
+            logger.info("开始获取月份列表...")
+            # 获取月份列表
+            periods = self.get_period_details(period_id)
+            if not periods:
+                raise ValueError("未找到任何月份数据")
+            logger.info(f"获取到 {len(periods)} 个月份")
+            logger.info("开始获取单位树结构...")
+            # 获取单位树结构
+            period_detail_id = periods[0]["id"]
+            companies = self.get_companies(task_id, period_detail_id)
+            if not companies:
+                raise ValueError("未找到任何单位数据")
+            logger.info(f"获取到 {len(companies)} 个顶级单位")
+            # 提取所有公司信息
+            company_pairs = self._extract_all_companies(companies)
+            logger.info(f"提取到 {len(company_pairs)} 个公司信息")
+
+            all_data = {
+                "task": selected_task,
+                "periods": periods,
+                "companies": companies,
+                "company_pairs": company_pairs,
+                "reports_data": []
+            }
+
+            # 为每个月份和每个公司获取报表数据
+            logger.info("开始获取报表数据...")
+            for period in periods:
+                period_detail_id = period["id"]
+                period_name = period.get("periodDetailName", "未知月份")
+
+                for company_id, parent_id in company_pairs:
+                    try:
+
+                        reports = self.get_reports(company_id, period_detail_id, task_id)
+
+                        if reports:
+
+                            report_ids = [report.get("reportId") for report in reports if report.get("reportId")]
+
+                            if report_ids:
+                                report_data = self._make_api_request(report_ids, company_id, parent_id)
+
+                                report_result = self.parse_table_data(report_data)
+
+                                all_data["reports_data"].append({
+                                    "period_name": period_name,
+                                    "period_detail_id": period_detail_id,
+                                    "company_id": company_id,
+                                    "parent_id": parent_id,
+                                    "reports": reports,
+                                    "report_data": report_result
+                                })
+                                logger.info(f"成功获取 {period_name} - {company_id} 的报表数据，{all_data}")
+
+                    except Exception as e:
+                        logger.warning(f"获取 {period_name} - {company_id} 的报表数据失败: {e}")
+                        continue
+
+            logger.info(f"完成所有数据获取，共获取 {len(all_data['reports_data'])} 份报表数据")
+            return all_data
+
         except Exception as e:
-            logger.error(f"执行工作流程时出错: {e}")
+            logger.error(f"获取所有数据失败: {e}")
+            raise Exception(f"获取所有数据失败: {e}")
 
 
 if __name__ == '__main__':
     auto_motion_api = AutoFinancialReportAPI()
-    auto_motion_api.execute_full_workflow()
+    all_data = auto_motion_api.get_all_data_by_task(task_name_filter="2025年月报")
