@@ -9,3 +9,6 @@ wheels/
 # Virtual environments
 .venv
 .idea
+
+utils/Chrome/chrome-linux64.zip
+utils/Chrome/chromedriver-linux64.zip
