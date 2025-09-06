@@ -134,7 +134,7 @@ class FinanceAPIClient:
 
 
 class AutoFinancialReportAPI:
-    def __init__(self, username: str = "lijin5", password: str = "Qaz.123456789."):
+    def __init__(self, username: str, password: str):
         self.username = username
         self.password = password
         self.base_url = "http://10.3.102.141/shj/vue/api/rp/query_output/query_report_new"
@@ -546,3 +546,7 @@ class AutoFinancialReportAPI:
         except Exception as e:
             logger.error(f"获取所有数据失败: {e}")
             raise Exception(f"获取所有数据失败: {e}")
+
+
+def create_auto_financial_api(username: str, password: str) -> AutoFinancialReportAPI:
+    return AutoFinancialReportAPI(username, password)

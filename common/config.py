@@ -31,6 +31,10 @@ class ConfigManager:
             'APP_KEY': 'api.app_key',
             'APP_SECRET': 'api.app_secret',
 
+            # 财务报表API配置
+            'USERNAME': 'financial_api.username',
+            'PASSWORD': 'financial_api.password',
+
             # 数据库配置
             'DB_HOST': 'database.host',
             'DB_PORT': 'database.port',
