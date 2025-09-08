@@ -143,14 +143,12 @@ def get_automation_data(username: str, password: str) \
         wait = WebDriverWait(driver, 10)
         driver.get('https://caikuai.crc.cr/#/login?redirectModule=')
         logger.info("访问登录页面...")
-        time.sleep(10)
 
         # 关闭弹窗
         close_button = wait.until(EC.presence_of_element_located(
             (By.CSS_SELECTOR,
              "body > div.login > div.el-dialog__wrapper.tip-dialog > div > div.el-dialog__header > button")))
         close_button.click()
-        time.sleep(5)
 
         # 输入账号
         account = wait.until(EC.presence_of_element_located((By.ID, "loginKey")))
@@ -175,7 +173,6 @@ def get_automation_data(username: str, password: str) \
         login_button = wait.until(EC.element_to_be_clickable((By.ID, "login")))
         login_button.click()
         logger.info("登录请求已发送...")
-        time.sleep(5)
 
         # 点击大数据按钮
         try:
@@ -184,7 +181,6 @@ def get_automation_data(username: str, password: str) \
             )
             big_data_button.click()
             logger.info("已点击大数据按钮。")
-            time.sleep(5)
         except Exception as e:
             logger.error(f"未找到大数据按钮，可能是页面结构已更改。{e}")
 

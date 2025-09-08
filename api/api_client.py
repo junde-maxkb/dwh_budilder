@@ -514,6 +514,8 @@ class AutoFinancialReportAPI:
 
                 for company_id, parent_id in company_pairs:
                     try:
+                        if parent_id != "2SH0000001":
+                            continue
 
                         reports = self.get_reports(company_id, period_detail_id, task_id)
 

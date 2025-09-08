@@ -106,6 +106,7 @@ RUN pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trus
     requests>=2.32.5 \
     selenium>=4.35.0 \
     sqlalchemy>=2.0.43 \
+    cx-oracle>=8.3.0 \
     webdriver-manager>=4.0.2
 
 # 清理apt缓存以减小镜像大小

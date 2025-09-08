@@ -4,31 +4,9 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
 
 # 虚拟环境
-.env
 .venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
 
 # IDE文件
 .vscode/
@@ -37,46 +15,15 @@ venv.bak/
 *.swo
 *~
 
-# 操作系统文件
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
 # 日志文件
 *.log
-logs/
-
-# 数据文件
-data/
-downloads/
 
 # 测试文件
 .pytest_cache/
 .coverage
 htmlcov/
 
-# Git文件
-.git/
-.gitignore
-
-# Docker文件（避免递归复制）
-Dockerfile*
-docker-compose*.yml
-*.tar
-
 # 文档文件
-README*.md
 *.pdf
 *.doc
 *.docx
-
-# 构建脚本
-build-*.bat
-build-*.sh
-
-# 锁文件
-uv.lock
