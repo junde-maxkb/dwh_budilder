@@ -303,6 +303,23 @@ class DataProcessor:
             self.logger.error(f"添加处理任务到系统管理器时发生错误: {str(e)}")
             return False
 
+    def get_tasks(self) -> List[Dict[str, Any]]:
+        """
+        获取所有任务列表
+
+        Returns:
+            List[Dict[str, Any]]: 任务列表
+        """
+        if not self.auto_report_api:
+            self.logger.error("自动财务报表API客户端未初始化")
+            return []
+
+        try:
+            return self.auto_report_api.get_tasks()
+        except Exception as e:
+            self.logger.error(f"获取任务列表失败: {e}")
+            return []
+
     def get_processing_statistics(self) -> Dict[str, Any]:
         """获取数据处理统计信息"""
         return {
@@ -317,12 +334,12 @@ class DataProcessor:
         }
 
     @execution_monitor(stage="financial_report_processing", track_memory=True)
-    def process_financial_reports(self, task_name_filter: str = None) -> ProcessingResult:
+    def process_financial_reports(self, task_info: Dict[str, Any] = None) -> ProcessingResult:
         """
         处理财务报表数据的完整流程
 
         Args:
-            task_name_filter: 任务名称筛选条件
+            task_info: 任务信息
 
         Returns:
             ProcessingResult: 处理结果
@@ -341,10 +358,10 @@ class DataProcessor:
         start_time = datetime.now()
 
         try:
-            self.logger.info(f"开始处理财务报表数据，任务筛选条件: {task_name_filter}")
+            self.logger.info(f"开始处理财务报表数据，任务信息: {task_info}")
 
             # 获取财务报表数据
-            report_data = self.auto_report_api.get_all_data_by_task(task_name_filter)
+            report_data = self.auto_report_api.get_all_data_by_task(task_info)
 
             if not report_data or not report_data.get('reports_data'):
                 return ProcessingResult(
@@ -498,35 +515,36 @@ class DataProcessor:
         flatten_recursive(companies)
         return flattened
 
-    def add_financial_report_task_to_system(self, system_manager: SystemManager, task_name_filter: str = None,
+    def add_financial_report_task_to_system(self, system_manager: SystemManager, task_info: Dict[str, Any] = None,
                                             priority: int = 0) -> bool:
         """
         将财务报表处理任务添加到系统管理器
 
         Args:
             system_manager: 系统管理器实例
-            task_name_filter: 任务名称筛选条件
+            task_info: 任务信息字典
             priority: 任务优先级
 
         Returns:
             bool: 是否成功添加任务
         """
         try:
-            task_name = f"process_financial_reports_{task_name_filter or 'all'}"
+            task_name = task_info.get("taskName", "unknown_task") if task_info else "all_tasks"
+            formatted_task_name = f"process_financial_reports_{task_name}"
 
             success = system_manager.add_task(
-                name=task_name,
+                name=formatted_task_name,
                 func=self.process_financial_reports,
-                args=(task_name_filter,),
+                args=(task_info,),
                 kwargs={},
                 priority=priority,
                 max_retries=3
             )
 
             if success:
-                self.logger.info(f"财务报表处理任务 {task_name} 已添加到队列")
+                self.logger.info(f"财务报表处理任务 {formatted_task_name} 已添加到队列")
             else:
-                self.logger.error(f"添加财务报表处理任务 {task_name} 失败")
+                self.logger.error(f"添加财务报表处理任务 {formatted_task_name} 失败")
 
             return success
 

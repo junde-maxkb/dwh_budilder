@@ -1,6 +1,7 @@
 import logging
 import sys
 import time
+import re
 
 from common.config import ConfigManager
 from core.data_processor import DataProcessor, create_batch_processing_tasks
@@ -29,29 +30,44 @@ def process_financial_reports_tasks(data_processor: DataProcessor, system_manage
     logger.info("=== 开始添加财务报表任务到队列 ===")
 
     try:
-        # 定义需要处理的任务筛选条件
-        task_filters = [
-            "月报",
-            "季报",
-        ]
+        # 获取所有任务
+        tasks = data_processor.get_tasks()
+        if not tasks:
+            logger.warning("未获取到任何任务")
+            return False
+
+        # 使用正则匹配筛选包含季报或月报的任务
+        pattern = re.compile(r'.*[季月]报.*', re.IGNORECASE)
+        matched_tasks = []
+
+        for task in tasks:
+            task_name = task.get("taskName", "")
+            if pattern.match(task_name):
+                matched_tasks.append(task)
+                logger.info(f"找到匹配任务: {task_name}")
+
+        if not matched_tasks:
+            logger.warning("未找到包含季报或月报的任务")
+            return False
 
         financial_tasks_added = 0
 
-        for i, task_filter in enumerate(task_filters):
-            logger.info(f"添加财务报表任务 - 筛选条件: {task_filter or '全部任务'}")
+        for i, task in enumerate(matched_tasks):
+            task_name = task.get("taskName", "")
+            logger.info(f"添加财务报表任务 - 任务名称: {task_name}")
 
             # 将财务报表任务添加到系统队列
             success = data_processor.add_financial_report_task_to_system(
                 system_manager=system_manager,
-                task_name_filter=task_filter,
+                task_info=task,
                 priority=10 + i
             )
 
             if success:
                 financial_tasks_added += 1
-                logger.info(f"✅ 财务报表任务已添加到队列 - 筛选条件: {task_filter or '全部任务'}")
+                logger.info(f"✅ 财务报表任务已添加到队列 - 任务名称: {task_name}")
             else:
-                logger.error(f"❌ 添加财务报表任务失败 - 筛选条件: {task_filter or '全部任务'}")
+                logger.error(f"❌ 添加财务报表任务失败 - 任务名称: {task_name}")
 
         logger.info(f"财务报表任务添加完成，成功添加 {financial_tasks_added} 个任务")
         return financial_tasks_added > 0
@@ -107,7 +123,7 @@ def main():
             # === 2. 添加传统财务数据任务到队列 ===
             logger.info("步骤2: 添加传统财务数据任务到队列")
 
-            company_codes = ['001']
+            company_codes = ['2SH0000001']
             data_types = [
                 'account_structure',  # 会计科目结构
                 'subject_dimension',  # 科目辅助核算关系

@@ -442,10 +442,10 @@ class AutoFinancialReportAPI:
             logger.error(f"解析表格数据时出错: {e}")
             return []
 
-    def get_all_data_by_task(self, task_name_filter: str = None) -> Dict[str, Any]:
+    def get_all_data_by_task(self, task_info: Dict[str, Any] = None) -> Dict[str, Any]:
         """
-        根据任务名称获取所有相关数据
-        :param task_name_filter: 任务名称筛选条件，如果为None则使用第一个任务
+        根据任务信息获取所有相关数据
+        :param task_info: 任务信息字典，如果为None则使用第一个任务
         :return: 包含所有数据的字典
         """
         if not self.access_token:
@@ -455,38 +455,32 @@ class AutoFinancialReportAPI:
 
         try:
             logger.info("开始获取所有数据...")
-            # 获取任务列表
-            tasks = self.get_tasks()
-            logger.info(f"获取到 {len(tasks)} 个任务")
-            if not tasks:
-                raise ValueError("未找到任何任务")
 
-            logger.info(f"筛选指定任务: {task_name_filter}")
-            # 筛选任务
-            selected_task = None
-            if task_name_filter:
-                for task in tasks:
-                    if task_name_filter in task.get("taskName", ""):
-                        selected_task = task
-                        break
-                if not selected_task:
-                    logger.warning(f"未找到包含'{task_name_filter}'的任务，使用第一个任务")
-                    selected_task = tasks[0]
+            # 如果提供了特定任务信息，直接使用
+            if task_info:
+                selected_task = task_info
+                logger.info(f"使用指定任务: {selected_task.get('taskName', '未知任务')}")
             else:
+                # 获取任务列表并选择第一个
+                tasks = self.get_tasks()
+                logger.info(f"获取到 {len(tasks)} 个任务")
+                if not tasks:
+                    raise ValueError("未找到任何任务")
                 selected_task = tasks[0]
-
-            logger.info(f"选择任务: {selected_task.get('taskName', '未知任务')}")
+                logger.info(f"使用第一个任务: {selected_task.get('taskName', '未知任务')}")
 
             task_id = selected_task["id"]
             period_id = selected_task["periodId"]
             group_id = selected_task.get("groupId", "")
             logger.info(f"任务ID: {task_id}, 月份ID: {period_id}, 组ID: {group_id}")
+
             logger.info("开始获取月份列表...")
             # 获取月份列表
             periods = self.get_period_details(period_id)
             if not periods:
                 raise ValueError("未找到任何月份数据")
             logger.info(f"获取到 {len(periods)} 个月份")
+
             logger.info("开始获取单位树结构...")
             # 获取单位树结构
             period_detail_id = periods[0]["id"]
@@ -494,6 +488,7 @@ class AutoFinancialReportAPI:
             if not companies:
                 raise ValueError("未找到任何单位数据")
             logger.info(f"获取到 {len(companies)} 个顶级单位")
+
             # 提取所有公司信息
             company_pairs = self._extract_all_companies(companies)
             logger.info(f"提取到 {len(company_pairs)} 个公司信息")
