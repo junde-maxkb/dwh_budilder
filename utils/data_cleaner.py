@@ -278,3 +278,96 @@ class DataCleaner:
 
         logger.info(f"{data_type}数据清洗完成: 原始{original_count}条, 清洗后{cleaned_count}条, 移除0条")
         return df
+
+    def clean_financial_reports(self, raw_data: List[Dict[str, Any]]) -> pd.DataFrame:
+        """
+        清洗财务报表数据
+        """
+        if not raw_data:
+            return pd.DataFrame()
+
+        df = pd.DataFrame(raw_data)
+        original_count = len(df)
+
+        df['row_index'] = pd.to_numeric(df['row_index'], errors='coerce').fillna(0).astype(int)
+        df['col_index'] = pd.to_numeric(df['col_index'], errors='coerce').fillna(0).astype(int)
+
+        df['original_value'] = df['value']  # 保留原始值用于追溯
+        df['cleaned_value'] = df['value'].apply(self._clean_report_value)
+        df['value_type'] = df['value'].apply(self._classify_value_type)
+
+        df['is_valid'] = df['cleaned_value'].notna() & (df['cleaned_value'] != '')
+
+        df['has_null_value'] = df['original_value'].isna()
+        df['has_empty_string'] = (df['original_value'] == '')
+        df['is_numeric'] = df['value_type'] == 'numeric'
+        df['is_text'] = df['value_type'] == 'text'
+
+        df['cleaned_at'] = datetime.now()
+        df['data_source'] = 'financial_report_api'
+
+        cleaned_count = len(df)
+        removed_count = 0
+
+        self.cleaning_stats['financial_reports'] = {
+            'original': original_count,
+            'cleaned': cleaned_count,
+            'removed': removed_count,
+            'valid_records': df['is_valid'].sum(),
+            'null_values': df['has_null_value'].sum(),
+            'empty_strings': df['has_empty_string'].sum(),
+            'numeric_values': df['is_numeric'].sum(),
+            'text_values': df['is_text'].sum()
+        }
+
+        logger.info(f"财务报表数据清洗完成: 原始{original_count}条, 清洗后{cleaned_count}条, "
+                    f"有效数据{df['is_valid'].sum()}条, 数值型{df['is_numeric'].sum()}条, "
+                    f"文本型{df['is_text'].sum()}条")
+
+        return df
+
+    def _clean_report_value(self, value) -> Any:
+        """
+        清洗报表中的单个值
+        """
+        if value is None:
+            return None
+
+        str_value = str(value).strip()
+
+        if str_value == '' or str_value.lower() == 'none':
+            return ''
+
+        try:
+            cleaned_str = re.sub(r'[,，\s]', '', str_value)  # 移除逗号和空格
+
+            if re.match(r'^-?\d+\.?\d*$', cleaned_str):
+                if '.' in cleaned_str:
+                    return float(cleaned_str)
+                else:
+                    return int(cleaned_str)
+        except (ValueError, TypeError):
+            pass
+
+        return str_value
+
+    def _classify_value_type(self, value) -> str:
+        """
+        分类值的类型
+        """
+        if value is None:
+            return 'null'
+
+        str_value = str(value).strip()
+        if str_value == '':
+            return 'empty'
+
+        try:
+            cleaned_str = re.sub(r'[,，\s]', '', str_value)
+            if re.match(r'^-?\d+\.?\d*$', cleaned_str):
+                float(cleaned_str)
+                return 'numeric'
+        except (ValueError, TypeError):
+            pass
+
+        return 'text'

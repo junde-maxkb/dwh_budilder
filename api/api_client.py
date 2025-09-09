@@ -522,7 +522,11 @@ class AutoFinancialReportAPI:
                                 report_data = self._make_api_request(report_ids, company_id, parent_id)
 
                                 report_result = self.parse_table_data(report_data)
-
+                                """
+                                reports_data 示例结构：报表格式 [
+                                ["上海局xxx",None,"",None,None,None,None,None,None,None,None,None,None,None,]
+                                ],里面的一个列表是一行数据
+                                """
                                 all_data["reports_data"].append({
                                     "period_name": period_name,
                                     "period_detail_id": period_detail_id,
