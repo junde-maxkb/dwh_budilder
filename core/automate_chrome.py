@@ -184,6 +184,7 @@ def get_automation_data(username: str, password: str) \
         except Exception as e:
             logger.error(f"未找到大数据按钮，可能是页面结构已更改。{e}")
 
+        time.sleep(5)
         # 点击过程管理
         try:
             all_windows_before = driver.window_handles
@@ -202,12 +203,12 @@ def get_automation_data(username: str, password: str) \
             if new_window:
                 driver.switch_to.window(new_window)
                 logger.info("已经切换到新标签页")
-                time.sleep(5)
             else:
                 logger.error("没找到新的标签")
         except Exception as e:
             logger.error(f"未找到过程管理按钮，可能是页面结构已更改。{e}")
 
+        time.sleep(5)
         # 点击切换单位
         try:
             switch_unit_span = wait.until(EC.element_to_be_clickable(
@@ -237,6 +238,7 @@ def get_automation_data(username: str, password: str) \
         except Exception as e:
             logger.error("点击失败：", e)
 
+        time.sleep(5)
         # 获取数据
         current_url = driver.current_url
         logger.info(f"当前页面URL: {current_url}")

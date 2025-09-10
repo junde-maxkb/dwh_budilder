@@ -442,27 +442,31 @@ class AutoFinancialReportAPI:
             logger.error(f"解析表格数据时出错: {e}")
             return []
 
-    def get_all_data_by_task(self, task_name_filter: str = None, filter_quarterly_monthly: bool = True) -> (
-            Dict)[str, Any]:
+    def get_all_data_by_task(self, task_name_filter: str = None, filter_quarterly_monthly: bool = True,
+                             tasks_list: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         根据任务名称获取所有相关数据
         :param task_name_filter: 任务名称筛选条件，如果为None则使用第一个任务
         :param filter_quarterly_monthly: 是否筛选季报月报任务，默认为True
+        :param tasks_list: 预先获取的任务列表，如果提供则不会重复获取
         :return: 包含所有数据的字典
         """
         try:
             logger.info("开始获取所有数据...")
-            # 获取任务列表
-            tasks = self.get_tasks()
-            logger.info(f"获取到 {len(tasks)} 个任务")
+
+            if tasks_list is not None:
+                logger.info(f"使用预先提供的任务列表，共 {len(tasks_list)} 个任务")
+                tasks = tasks_list
+            else:
+                tasks = self.get_tasks()
+                logger.info(f"获取到 {len(tasks)} 个任务")
+
             if not tasks:
                 raise ValueError("未找到任何任务")
 
-            # 筛选任务逻辑
             selected_tasks = []
 
-            if filter_quarterly_monthly:
-                # 使用正则匹配筛选包含季报或月报的任务
+            if filter_quarterly_monthly and tasks_list is None:
                 pattern = re.compile(r'.*[季月]报.*', re.IGNORECASE)
                 logger.info("应用季报月报筛选条件...")
 
@@ -488,7 +492,6 @@ class AutoFinancialReportAPI:
             else:
                 selected_tasks = tasks
 
-            # 如果指定了任务名称筛选条件，进一步筛选
             final_task = None
             if task_name_filter:
                 logger.info(f"应用任务名称筛选条件: {task_name_filter}")
@@ -547,6 +550,10 @@ class AutoFinancialReportAPI:
                 period_name = period.get("periodDetailName", "未知月份")
 
                 for company_id, parent_id in company_pairs:
+
+                    if parent_id != "2SH0000001":
+                        logger.warning("父公司ID异常，跳过该公司")
+                        continue
                     try:
                         reports = self.get_reports(company_id, period_detail_id, task_id)
 
@@ -596,7 +603,7 @@ class AutoFinancialReportAPI:
                 return []
 
             # 使用正则匹配筛选包含季报或月报的任务
-            pattern = re.compile(r'.*[季月]报.*', re.IGNORECASE)
+            pattern = re.compile(r'.*(202[4-9]|20[3-9]\d|2[1-9]\d{2}|\d{4,}).*[季月]报.*', re.IGNORECASE)
             matched_tasks = []
 
             for task in tasks:

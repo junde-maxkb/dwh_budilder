@@ -391,7 +391,7 @@ class DataProcessor:
         处理财务报表数据的完整流程
 
         Args:
-            task_info: 任务信息
+            task_info: 任务信息，包含预先获取的任务数据
 
         Returns:
             ProcessingResult: 处理结果
@@ -412,8 +412,18 @@ class DataProcessor:
         try:
             self.logger.info(f"开始处理财务报表数据，任务信息: {task_info}")
 
-            # 获取财务报表数据
-            report_data = self.auto_report_api.get_all_data_by_task(task_info)
+            if task_info and isinstance(task_info, dict) and 'taskName' in task_info:
+                task_name = task_info.get('taskName', '')
+                self.logger.info(f"使用预先获取的任务信息: {task_name}")
+
+                report_data = self.auto_report_api.get_all_data_by_task(
+                    task_name_filter=None,
+                    filter_quarterly_monthly=False,
+                    tasks_list=[task_info]
+                )
+            else:
+                self.logger.info("未提供具体任务信息，将重新获取任务列表")
+                report_data = self.auto_report_api.get_all_data_by_task(task_info)
 
             if not report_data or not report_data.get('reports_data'):
                 return ProcessingResult(
