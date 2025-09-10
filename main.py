@@ -1,7 +1,6 @@
 import logging
 import sys
 import time
-import re
 
 from common.config import ConfigManager
 from core.data_processor import DataProcessor, create_batch_processing_tasks
@@ -23,70 +22,6 @@ def setup_logging() -> None:
 
 setup_logging()
 logger = logging.getLogger(__name__)
-
-
-def process_financial_reports_tasks(data_processor: DataProcessor, system_manager: SystemManager) -> bool:
-    """处理财务报表任务并添加到系统队列"""
-    logger.info("=== 开始添加财务报表任务到队列 ===")
-
-    try:
-
-        if not data_processor.auto_report_api:
-            logger.error("自动财务报表API客户端未初始化，无法获取任务")
-            return False
-
-        logger.info("正在进行自动化登录...")
-        if not data_processor.auto_report_api.login_and_get_tokens():
-            logger.error("自动化登录失败，无法获取任务列表")
-            return False
-
-        logger.info("自动化登录成功，开始获取任务列表...")
-
-        # 获取所有任务
-        tasks = data_processor.get_tasks()
-        if not tasks:
-            logger.warning("未获取到任何任务")
-            return False
-
-        # 使用正则匹配筛选包含季报或月报的任务
-        pattern = re.compile(r'.*[季月]报.*', re.IGNORECASE)
-        matched_tasks = []
-
-        for task in tasks:
-            task_name = task.get("taskName", "")
-            if pattern.match(task_name):
-                matched_tasks.append(task)
-                logger.info(f"找到匹配任务: {task_name}")
-
-        if not matched_tasks:
-            logger.warning("未找到包含季报或月报的任务")
-            return False
-
-        financial_tasks_added = 0
-
-        for i, task in enumerate(matched_tasks):
-            task_name = task.get("taskName", "")
-            logger.info(f"添加财务报表任务 - 任务名称: {task_name}")
-
-            # 将财务报表任务添加到系统队列
-            success = data_processor.add_financial_report_task_to_system(
-                system_manager=system_manager,
-                task_info=task,
-                priority=10 + i
-            )
-
-            if success:
-                financial_tasks_added += 1
-                logger.info(f"✅ 财务报表任务已添加到队列 - 任务名称: {task_name}")
-            else:
-                logger.error(f"❌ 添加财务报表任务失败 - 任务名称: {task_name}")
-
-        logger.info(f"财务报表任务添加完成，成功添加 {financial_tasks_added} 个任务")
-        return financial_tasks_added > 0
-
-    except Exception as e:
-        logger.error(f"添加财务报表任务到队列时发生错误: {e}", exc_info=True)
-        return False
 
 
 def main():
@@ -125,7 +60,41 @@ def main():
         try:
             # === 1. 添加财务报表任务到队列 ===
             logger.info("步骤1: 添加财务报表任务到队列")
-            financial_success = process_financial_reports_tasks(data_processor, system_manager)
+
+            # 获取季报月报任务并添加到队列
+            try:
+                # 通过DataProcessor获取季报月报任务
+                quarterly_monthly_tasks = data_processor.get_quarterly_monthly_tasks()
+
+                if not quarterly_monthly_tasks:
+                    logger.warning("未找到季报月报任务")
+                    financial_success = False
+                else:
+                    financial_tasks_added = 0
+
+                    for i, task in enumerate(quarterly_monthly_tasks):
+                        task_name = task.get("taskName", "")
+                        logger.info(f"添加财务报表任务 - 任务名称: {task_name}")
+
+                        # 将财务报表任务添加到系统队列
+                        success = data_processor.add_financial_report_task_to_system(
+                            system_manager=system_manager,
+                            task_info=task,
+                            priority=10 + i
+                        )
+
+                        if success:
+                            financial_tasks_added += 1
+                            logger.info(f"✅ 财务报表任务已添加到队列 - 任务名称: {task_name}")
+                        else:
+                            logger.error(f"❌ 添加财务报表任务失败 - 任务名称: {task_name}")
+
+                    financial_success = financial_tasks_added > 0
+                    logger.info(f"财务报表任务添加完成，成功添加 {financial_tasks_added} 个任务")
+
+            except Exception as e:
+                logger.error(f"添加财务报表任务到队列时发生错误: {e}", exc_info=True)
+                financial_success = False
 
             if financial_success:
                 logger.info("财务报表任务添加成功")

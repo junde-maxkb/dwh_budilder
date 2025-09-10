@@ -1,6 +1,7 @@
 import json
 import requests
 import time
+import re
 from typing import Dict, List, Optional, Any, Tuple
 from fake_useragent import UserAgent
 from loguru import logger
@@ -272,8 +273,7 @@ class AutoFinancialReportAPI:
                 headers=headers,
                 json=data,
                 verify=False,
-                timeout=300,
-                cookies=self.cookies
+                timeout=30
             )
 
             response.raise_for_status()
@@ -442,36 +442,74 @@ class AutoFinancialReportAPI:
             logger.error(f"解析表格数据时出错: {e}")
             return []
 
-    def get_all_data_by_task(self, task_info: Dict[str, Any] = None) -> Dict[str, Any]:
+    def get_all_data_by_task(self, task_name_filter: str = None, filter_quarterly_monthly: bool = True) -> (
+            Dict)[str, Any]:
         """
-        根据任务信息获取所有相关数据
-        :param task_info: 任务信息字典，如果为None则使用第一个任务
+        根据任务名称获取所有相关数据
+        :param task_name_filter: 任务名称筛选条件，如果为None则使用第一个任务
+        :param filter_quarterly_monthly: 是否筛选季报月报任务，默认为True
         :return: 包含所有数据的字典
         """
-        # if not self.access_token:
-        #     logger.info("未登录，开始自动登录...")
-        #     if not self.login_and_get_tokens():
-        #         raise ValueError("自动登录失败")
-
         try:
             logger.info("开始获取所有数据...")
+            # 获取任务列表
+            tasks = self.get_tasks()
+            logger.info(f"获取到 {len(tasks)} 个任务")
+            if not tasks:
+                raise ValueError("未找到任何任务")
 
-            # 如果提供了特定任务信息，直接使用
-            if task_info:
-                selected_task = task_info
-                logger.info(f"使用指定任务: {selected_task.get('taskName', '未知任务')}")
+            # 筛选任务逻辑
+            selected_tasks = []
+
+            if filter_quarterly_monthly:
+                # 使用正则匹配筛选包含季报或月报的任务
+                pattern = re.compile(r'.*[季月]报.*', re.IGNORECASE)
+                logger.info("应用季报月报筛选条件...")
+
+                for task in tasks:
+                    task_name = task.get("taskName", "")
+                    if pattern.match(task_name):
+                        selected_tasks.append(task)
+                        logger.info(f"找到匹配的季报/月报任务: {task_name}")
+
+                if not selected_tasks:
+                    logger.warning("未找到包含季报或月报的任务")
+                    if not task_name_filter:
+                        # 如果没有找到季报月报任务且没有指定特定任务名，返回空结果
+                        return {
+                            "message": "未找到季报或月报任务",
+                            "tasks_found": [],
+                            "selected_task": None,
+                            "periods": [],
+                            "companies": [],
+                            "company_pairs": [],
+                            "reports_data": []
+                        }
             else:
-                # 获取任务列表并选择第一个
-                tasks = self.get_tasks()
-                logger.info(f"获取到 {len(tasks)} 个任务")
-                if not tasks:
-                    raise ValueError("未找到任何任务")
-                selected_task = tasks[0]
-                logger.info(f"使用第一个任务: {selected_task.get('taskName', '未知任务')}")
+                selected_tasks = tasks
 
-            task_id = selected_task["id"]
-            period_id = selected_task["periodId"]
-            group_id = selected_task.get("groupId", "")
+            # 如果指定了任务名称筛选条件，进一步筛选
+            final_task = None
+            if task_name_filter:
+                logger.info(f"应用任务名称筛选条件: {task_name_filter}")
+                for task in selected_tasks:
+                    if task_name_filter in task.get("taskName", ""):
+                        final_task = task
+                        break
+                if not final_task:
+                    logger.warning(f"未找到包含'{task_name_filter}'的任务，使用第一个匹配的任务")
+                    final_task = selected_tasks[0] if selected_tasks else None
+            else:
+                final_task = selected_tasks[0] if selected_tasks else None
+
+            if not final_task:
+                raise ValueError("未找到符合条件的任务")
+
+            logger.info(f"最终选择任务: {final_task.get('taskName', '未知任务')}")
+
+            task_id = final_task["id"]
+            period_id = final_task["periodId"]
+            group_id = final_task.get("groupId", "")
             logger.info(f"任务ID: {task_id}, 月份ID: {period_id}, 组ID: {group_id}")
 
             logger.info("开始获取月份列表...")
@@ -494,7 +532,8 @@ class AutoFinancialReportAPI:
             logger.info(f"提取到 {len(company_pairs)} 个公司信息")
 
             all_data = {
-                "task": selected_task,
+                "task": final_task,
+                "tasks_found": selected_tasks,  # 返回所有匹配的任务
                 "periods": periods,
                 "companies": companies,
                 "company_pairs": company_pairs,
@@ -509,24 +548,15 @@ class AutoFinancialReportAPI:
 
                 for company_id, parent_id in company_pairs:
                     try:
-                        if parent_id != "2SH0000001":
-                            continue
-
                         reports = self.get_reports(company_id, period_detail_id, task_id)
 
                         if reports:
-
                             report_ids = [report.get("reportId") for report in reports if report.get("reportId")]
 
                             if report_ids:
                                 report_data = self._make_api_request(report_ids, company_id, parent_id)
-
                                 report_result = self.parse_table_data(report_data)
-                                """
-                                reports_data 示例结构：报表格式 [
-                                ["上海局xxx",None,"",None,None,None,None,None,None,None,None,None,None,None,]
-                                ],里面的一个列表是一行数据
-                                """
+
                                 all_data["reports_data"].append({
                                     "period_name": period_name,
                                     "period_detail_id": period_detail_id,
@@ -535,7 +565,7 @@ class AutoFinancialReportAPI:
                                     "reports": reports,
                                     "report_data": report_result
                                 })
-                                logger.info(f"成功获取 {period_name} - {company_id} 的报表数据，{all_data}")
+                                logger.info(f"成功获取 {period_name} - {company_id} 的报表数据")
 
                     except Exception as e:
                         logger.warning(f"获取 {period_name} - {company_id} 的报表数据失败: {e}")
@@ -547,6 +577,40 @@ class AutoFinancialReportAPI:
         except Exception as e:
             logger.error(f"获取所有数据失败: {e}")
             raise Exception(f"获取所有数据失败: {e}")
+
+    def get_quarterly_monthly_tasks(self) -> List[Dict[str, Any]]:
+        """
+        专门获取季报月报任务列表
+        :return: 季报月报任务列表
+        """
+        if not self.access_token:
+            logger.info("未登录，开始自动登录...")
+        if not self.login_and_get_tokens():
+            raise ValueError("自动登录失败")
+        try:
+            logger.info("开始获取季报月报任务...")
+            tasks = self.get_tasks()
+
+            if not tasks:
+                logger.warning("未获取到任何任务")
+                return []
+
+            # 使用正则匹配筛选包含季报或月报的任务
+            pattern = re.compile(r'.*[季月]报.*', re.IGNORECASE)
+            matched_tasks = []
+
+            for task in tasks:
+                task_name = task.get("taskName", "")
+                if pattern.match(task_name):
+                    matched_tasks.append(task)
+                    logger.info(f"找到匹配任务: {task_name}")
+
+            logger.info(f"共找到 {len(matched_tasks)} 个季报月报任务")
+            return matched_tasks
+
+        except Exception as e:
+            logger.error(f"获取季报月报任务失败: {e}")
+            return []
 
 
 def create_auto_financial_api(username: str, password: str) -> AutoFinancialReportAPI:

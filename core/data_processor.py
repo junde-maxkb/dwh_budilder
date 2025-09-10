@@ -368,6 +368,23 @@ class DataProcessor:
             }
         }
 
+    def get_quarterly_monthly_tasks(self) -> List[Dict[str, Any]]:
+        """
+        获取季报月报任务列表
+
+        Returns:
+            List[Dict[str, Any]]: 季报月报任务列表
+        """
+        if not self.auto_report_api:
+            self.logger.error("自动财务报表API客户端未初始化")
+            return []
+
+        try:
+            return self.auto_report_api.get_quarterly_monthly_tasks()
+        except Exception as e:
+            self.logger.error(f"获取季报月报任务失败: {e}")
+            return []
+
     @execution_monitor(stage="financial_report_processing", track_memory=True)
     def process_financial_reports(self, task_info: Dict[str, Any] = None) -> ProcessingResult:
         """
