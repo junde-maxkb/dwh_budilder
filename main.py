@@ -30,6 +30,18 @@ def process_financial_reports_tasks(data_processor: DataProcessor, system_manage
     logger.info("=== 开始添加财务报表任务到队列 ===")
 
     try:
+
+        if not data_processor.auto_report_api:
+            logger.error("自动财务报表API客户端未初始化，无法获取任务")
+            return False
+
+        logger.info("正在进行自动化登录...")
+        if not data_processor.auto_report_api.login_and_get_tokens():
+            logger.error("自动化登录失败，无法获取任务列表")
+            return False
+
+        logger.info("自动化登录成功，开始获取任务列表...")
+
         # 获取所有任务
         tasks = data_processor.get_tasks()
         if not tasks:

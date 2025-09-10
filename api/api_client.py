@@ -448,10 +448,10 @@ class AutoFinancialReportAPI:
         :param task_info: 任务信息字典，如果为None则使用第一个任务
         :return: 包含所有数据的字典
         """
-        if not self.access_token:
-            logger.info("未登录，开始自动登录...")
-            if not self.login_and_get_tokens():
-                raise ValueError("自动登录失败")
+        # if not self.access_token:
+        #     logger.info("未登录，开始自动登录...")
+        #     if not self.login_and_get_tokens():
+        #         raise ValueError("自动登录失败")
 
         try:
             logger.info("开始获取所有数据...")
