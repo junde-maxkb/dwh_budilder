@@ -78,7 +78,7 @@ RUN mkdir -p /opt/oracle && \
     ln -s /opt/oracle/instantclient_* /opt/oracle/instantclient
 
 # 配置 Oracle 环境变量
-ENV LD_LIBRARY_PATH=/opt/oracle/instantclient:$LD_LIBRARY_PATH \
+ENV LD_LIBRARY_PATH=/opt/oracle/instantclient \
     PATH=/opt/oracle/instantclient:$PATH
 
 # 复制本地Chrome文件并安装
@@ -124,7 +124,6 @@ RUN pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trus
     pandas>=2.3.2 \
     psutil>=7.0.0 \
     pydantic>=2.11.7 \
-    pypdf>=6.0.0 \
     pytest>=8.4.1 \
     requests>=2.32.5 \
     selenium>=4.35.0 \
