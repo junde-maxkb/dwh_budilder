@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11
 
 # 设置工作目录
 WORKDIR /app
@@ -10,9 +10,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     CHROME_BIN=/opt/chrome-linux64/chrome \
     CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
 
-RUN echo "deb http://mirrors.aliyun.com/debian/ trixie main" > /etc/apt/sources.list && \
-    echo "deb http://mirrors.aliyun.com/debian/ trixie-updates main" >> /etc/apt/sources.list && \
-    echo "deb http://mirrors.aliyun.com/debian-security trixie-security main" >> /etc/apt/sources.list && \
+
+RUN echo "deb http://mirrors.aliyun.com/debian bookworm main contrib non-free non-free-firmware" > /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/debian bookworm-updates main contrib non-free non-free-firmware" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/debian-security bookworm-security main contrib non-free non-free-firmware" >> /etc/apt/sources.list && \
     apt-get update --fix-missing && \
     apt-get install -y --fix-missing --no-install-recommends \
     unzip \
@@ -63,6 +64,23 @@ RUN echo "deb http://mirrors.aliyun.com/debian/ trixie main" > /etc/apt/sources.
     libvulkan1 \
     libxss1)
 
+# 安装 Oracle Instant Client
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libaio1 \
+    curl \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /opt/oracle && \
+    curl -o /tmp/instantclient-basiclite.zip https://download.oracle.com/otn_software/linux/instantclient/219000/instantclient-basiclite-linux.x64-21.9.0.0.0dbru.zip && \
+    unzip /tmp/instantclient-basiclite.zip -d /opt/oracle && \
+    rm -f /tmp/instantclient-basiclite.zip && \
+    ln -s /opt/oracle/instantclient_* /opt/oracle/instantclient
+
+# 配置 Oracle 环境变量
+ENV LD_LIBRARY_PATH=/opt/oracle/instantclient:$LD_LIBRARY_PATH \
+    PATH=/opt/oracle/instantclient:$PATH
+
 # 复制本地Chrome文件并安装
 COPY utils/Chrome/chrome-linux64.zip /tmp/
 RUN unzip /tmp/chrome-linux64.zip -d /opt/ && \
@@ -91,11 +109,16 @@ COPY . /app/
 # 创建必要的目录
 RUN mkdir -p /app/logs /app/downloads /app/data
 
-
 RUN pip install --upgrade pip -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
 
+# 先安装基础依赖
 RUN pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com \
-    dotenv>=0.9.9 \
+    setuptools \
+    wheel
+
+# 安装Python包 - 使用项目实际依赖
+RUN pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com \
+    python-dotenv>=0.9.9 \
     fake-useragent>=2.2.0 \
     loguru>=0.7.3 \
     pandas>=2.3.2 \
@@ -105,17 +128,17 @@ RUN pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trus
     pytest>=8.4.1 \
     requests>=2.32.5 \
     selenium>=4.35.0 \
-    sqlalchemy>=2.0.43 \
-    cx-oracle>=8.3.0 \
-    webdriver-manager>=4.0.2
+    webdriver-manager>=4.0.2 \
+    cx_Oracle==8.3.0
 
-# 清理apt缓存以减小镜像大小
-RUN apt-get clean && \
+# 在安装完成后清理编译工具以减小镜像大小
+RUN apt-get remove -y build-essential gcc g++ libc6-dev && \
+    apt-get autoremove -y && \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-
-# 健康检查（移除网络依赖）
+# 健康检查 - 验证关键组件
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import sys; print('Health check passed'); sys.exit(0)"
+    CMD python -c "import jaydebeapi, selenium, pandas; print('Health check passed'); import sys; sys.exit(0)"
 
 CMD ["/bin/bash"]
