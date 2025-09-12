@@ -232,7 +232,6 @@ class AutoFinancialReportAPI:
                 headers['Cookie'] = cookie_str
             elif isinstance(self.cookies, str):
                 headers['Cookie'] = self.cookies
-        logger.info(headers)
         return headers
 
     def _make_api_request(self, report_ids: List[str], company_code: str, company_parent_code: str) -> Dict[str, Any]:
@@ -273,7 +272,7 @@ class AutoFinancialReportAPI:
                 headers=headers,
                 json=data,
                 verify=False,
-                timeout=30
+                timeout=300
             )
 
             response.raise_for_status()
@@ -378,7 +377,6 @@ class AutoFinancialReportAPI:
             resp = self.session.get(url, headers=headers, params=params, verify=False)
             resp.raise_for_status()
             result = resp.json()
-            logger.info(result)
             if isinstance(result, dict) and "result" in result:
                 companies = [result["result"][0]]
                 logger.info(f"成功获取单位树结构，包含 {len(companies)} 个顶级单位")
@@ -551,9 +549,6 @@ class AutoFinancialReportAPI:
 
                 for company_id, parent_id in company_pairs:
 
-                    if parent_id != "2SH0000001":
-                        logger.warning("父公司ID异常，跳过该公司")
-                        continue
                     try:
                         reports = self.get_reports(company_id, period_detail_id, task_id)
 
@@ -603,7 +598,7 @@ class AutoFinancialReportAPI:
                 return []
 
             # 使用正则匹配筛选包含季报或月报的任务
-            pattern = re.compile(r'.*(202[4-9]|20[3-9]\d|2[1-9]\d{2}|\d{4,}).*[季月]报.*', re.IGNORECASE)
+            pattern = re.compile(r'.*(?:202[4-9]|20[3-9]\d|2[1-9]\d{2}|\d{5,}).*[季月]报.*', re.IGNORECASE)
             matched_tasks = []
 
             for task in tasks:
