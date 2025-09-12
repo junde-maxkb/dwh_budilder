@@ -64,11 +64,12 @@ RUN echo "deb http://mirrors.aliyun.com/debian bookworm main contrib non-free no
     libvulkan1 \
     libxss1)
 
-# 安装 Oracle Instant Client
+# 安装 Oracle Instant Client 和基础工具
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libaio1 \
     curl \
     unzip \
+    alien \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /opt/oracle && \
@@ -80,6 +81,26 @@ RUN mkdir -p /opt/oracle && \
 # 配置 Oracle 环境变量
 ENV LD_LIBRARY_PATH=/opt/oracle/instantclient \
     PATH=/opt/oracle/instantclient:$PATH
+
+# 安装 OceanBase 客户端组件
+COPY utils/rpm/libobclient-2.2.11-42025062010.el7.x86_64.rpm /tmp/
+COPY utils/rpm/obci-2.1.1-362025071011.el7.x86_64.rpm /tmp/
+
+RUN alien -d /tmp/libobclient-2.2.11-42025062010.el7.x86_64.rpm && \
+    alien -d /tmp/obci-2.1.1-362025071011.el7.x86_64.rpm && \
+    find / -name "libobclient_*.deb" -o -name "obci_*.deb" && \
+    dpkg -i ./libobclient_*.deb && \
+    dpkg -i ./obci_*.deb && \
+    rm -f *.deb /tmp/*.rpm && \
+    apt-get install -f -y
+
+
+# 安装oracle 模块 cd /u01/obclient/python/
+RUN cd /u01/obclient/python/ && tar -xvf cx_Oracle-8.3.0.tar.gz && \
+    cd cx_Oracle-8.3.0 && python setup.py install
+
+ENV LD_LIBRARY_PATH=/u01/obclient/lib/:/opt/oracle/instantclient:$LD_LIBRARY_PATH \
+    PATH=/u01/obclient/bin:$PATH
 
 # 复制本地Chrome文件并安装
 COPY utils/Chrome/chrome-linux64.zip /tmp/
@@ -128,7 +149,6 @@ RUN pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trus
     requests>=2.32.5 \
     selenium>=4.35.0 \
     webdriver-manager>=4.0.2 \
-    cx_Oracle==8.3.0
 
 # 在安装完成后清理编译工具以减小镜像大小
 RUN apt-get remove -y build-essential gcc g++ libc6-dev && \
