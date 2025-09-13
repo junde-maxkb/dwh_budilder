@@ -235,62 +235,120 @@ class DataProcessor:
         return len(data_list)
 
     def _save_to_database(self, data: List[Dict[str, Any]], table_name: str):
-        """保存数据到数据库的通用方法"""
+        """保存数据到数据库的通用方法 - 增强版本"""
         try:
             if not data:
                 self.logger.warning(f"数据列表为空，跳过保存到表 {table_name}")
                 return
 
-            # 使用数据库管理器的方法保存数据
-            success = self.db_manager.save_dict_list_to_table(
+            # 使用增强的自动创建表并保存数据的方法
+            success = self.db_manager.auto_create_and_save_data(
                 data=data,
                 table_name=table_name,
                 if_exists='append'
             )
 
             if success:
-                self.logger.info(f"成功保存 {len(data)} 条数据到表 {table_name}")
+                self.logger.info(f"成功自动创建表并保存 {len(data)} 条数据到表 {table_name}")
             else:
-                raise Exception(f"保存数据到表 {table_name} 失败")
+                raise Exception(f"自动创建表并保存数据到表 {table_name} 失败")
 
         except Exception as e:
             self.logger.error(f"保存数据到表 {table_name} 时发生错误: {str(e)}")
             raise
 
-    def _save_raw_data_for_inspection(self, data: List[Dict[str, Any]], data_type: str, company_code: str):
-        """保存原始数据（打印输出，不实际入库）"""
-        table_name = f"raw_{data_type}"
+    def save_processed_data_to_database(self, data: List[Dict[str, Any]], data_type: str,
+                                      company_code: str, data_status: str = 'processed') -> bool:
+        """
+        将处理后的数据保存到数据库 - 新增方法
 
-        # 为每条数据添加元数据
-        for record in data:
-            record['company_code'] = company_code
-            record['created_at'] = datetime.now().isoformat()
-            record['data_source'] = 'api'
-            record['processing_status'] = 'raw'
+        Args:
+            data: 要保存的数据列表
+            data_type: 数据类型
+            company_code: 公司代码
+            data_status: 数据状态 ('raw', 'cleaned', 'processed')
 
-        self._print_data_for_inspection(data, table_name)
+        Returns:
+            bool: 保存是否成功
+        """
+        try:
+            if not data:
+                self.logger.warning(f"数据列表为空，跳过保存")
+                return True
 
-    def _save_cleaned_data_for_inspection(self, data, data_type: str, company_code: str) -> int:
-        """保存清洗后的数据（打印输出，不实际入库）"""
-        if data is None or (hasattr(data, 'empty') and data.empty):
-            return 0
+            # 根据数据状态生成表名
+            table_name = f"{data_status}_{data_type}"
 
-        table_name = f"cleaned_{data_type}"
+            # 为每条数据添加元数据
+            enriched_data = []
+            for record in data:
+                enriched_record = record.copy()
+                enriched_record.update({
+                    'company_code': company_code,
+                    'data_type': data_type,
+                    'data_status': data_status,
+                    'created_at': datetime.now().isoformat(),
+                    'processed_at': datetime.now().isoformat()
+                })
+                enriched_data.append(enriched_record)
 
-        # 如果是DataFrame，转换为字典列表
-        if hasattr(data, 'to_dict'):
-            data_list = data.to_dict('records')
-        else:
-            data_list = data
+            # 使用增强的自动创建表并保存数据
+            success = self.db_manager.auto_create_and_save_data(
+                data=enriched_data,
+                table_name=table_name,
+                if_exists='append'
+            )
 
-        # 为每条数据添加元数据
-        for record in data_list:
-            record['company_code'] = company_code
-            record['processing_status'] = 'cleaned'
-            record['cleaned_at'] = datetime.now().isoformat()
+            if success:
+                self.logger.info(f"成功保存 {len(enriched_data)} 条 {data_type} 数据到表 {table_name}")
 
-        self._print_data_for_inspection(data_list, table_name)
-        return len(data_list)
+                # 记录表信息
+                table_info = self.db_manager.get_table_info(table_name)
+                self.logger.info(f"表 {table_name} 信息: {table_info}")
+
+            return success
+
+        except Exception as e:
+            self.logger.error(f"保存 {data_type} 数据时发生错误: {e}")
+            return False
+
+    def get_data_processing_summary(self) -> Dict[str, Any]:
+        """
+        获取数据处理摘要信息
+
+        Returns:
+            Dict: 包含所有已处理表的摘要信息
+        """
+        try:
+            summary = {
+                'processed_tables': [],
+                'total_records': 0,
+                'processing_timestamp': datetime.now().isoformat()
+            }
+
+            # 获取所有已创建的表信息 - 这里可以根据命名模式查询
+            common_table_patterns = [
+                'raw_account_structure', 'cleaned_account_structure',
+                'raw_subject_dimension', 'cleaned_subject_dimension',
+                'raw_customer_vendor', 'cleaned_customer_vendor',
+                'raw_voucher_list', 'cleaned_voucher_list',
+                'raw_voucher_detail', 'cleaned_voucher_detail',
+                'raw_balance', 'cleaned_balance',
+                'raw_aux_balance', 'cleaned_aux_balance'
+            ]
+
+            for table_name in common_table_patterns:
+                if self.db_manager.table_exists(table_name):
+                    table_info = self.db_manager.get_table_info(table_name)
+                    if table_info.get('exists', False):
+                        summary['processed_tables'].append(table_info)
+                        summary['total_records'] += table_info.get('row_count', 0)
+
+            return summary
+
+        except Exception as e:
+            self.logger.error(f"获取数据处理摘要时发生错误: {e}")
+            return {'error': str(e)}
 
     def add_processing_tasks_to_system(self, system_manager: SystemManager,
                                        tasks_config: List[Dict[str, Any]]) -> bool:
@@ -299,7 +357,7 @@ class DataProcessor:
 
         Args:
             system_manager: 系统管理器实例
-            tasks_config: 任务配置列表，每个配置包含data_type, company_code等参数
+            tasks_config: 任务配置列表，每个配置包含data_type, company_code���参数
 
         Returns:
             bool: 是否成功添加所有任务
@@ -391,7 +449,7 @@ class DataProcessor:
         处理财务报表数据的完整流程
 
         Args:
-            task_info: 任务信息，包含预先获取的任务数据
+            task_info: 任���信息，包含预先获取的任务数据
 
         Returns:
             ProcessingResult: 处理结果
@@ -467,7 +525,7 @@ class DataProcessor:
 
     def _process_financial_report_data(self, report_data: Dict[str, Any]) -> int:
         """
-        处理和保存财务报表数据
+        处��和保存财务报表数据
 
         Args:
             report_data: 从API获取的报表数据
