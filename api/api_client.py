@@ -243,7 +243,7 @@ class AutoFinancialReportAPI:
         :return:
         """
         if not self.access_token:
-            raise ValueError("未获取到access_token��请先执行登录")
+            raise ValueError("未获取到access_token请先执行登录")
 
         timestamp = int(time.time() * 1000)
 
@@ -441,13 +441,15 @@ class AutoFinancialReportAPI:
             return []
 
     def get_all_data_by_task(self, task_name_filter: str = None, filter_quarterly_monthly: bool = True,
-                             tasks_list: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+                             tasks_list: List[Dict[str, Any]] = None,
+                             save_callback: callable = None) -> Dict[str, Any]:
         """
-        根据任务名称获取所有相关数据
+        根据任务名称获取所有相关数据，支持逐个单位处理和存储
         :param task_name_filter: 任务名称筛选条件，如果为None则使用第一个任务
         :param filter_quarterly_monthly: 是否筛选季报月报任务，默认为True
         :param tasks_list: 预先获取的任务列表，如果提供则不会重复获取
-        :return: 包含所有数据的字典
+        :param save_callback: 获取到单位数据后的回调函数，用于立即处理和存储数据
+        :return: 包含处理统计信息的字典
         """
         try:
             logger.info("开始获取所有数据...")
@@ -485,7 +487,9 @@ class AutoFinancialReportAPI:
                             "periods": [],
                             "companies": [],
                             "company_pairs": [],
-                            "reports_data": []
+                            "processed_count": 0,
+                            "success_count": 0,
+                            "error_count": 0
                         }
             else:
                 selected_tasks = tasks
@@ -532,22 +536,33 @@ class AutoFinancialReportAPI:
             company_pairs = self._extract_all_companies(companies)
             logger.info(f"提取到 {len(company_pairs)} 个公司信息")
 
-            all_data = {
-                "task": final_task,
-                "tasks_found": selected_tasks,  # 返回所有匹配的任务
-                "periods": periods,
-                "companies": companies,
-                "company_pairs": company_pairs,
-                "reports_data": []
-            }
+            # 统计信息
+            processed_count = 0
+            success_count = 0
+            error_count = 0
 
-            # 为每个月份和每个公司获取报表数据
-            logger.info("开始获取报表数据...")
+            if save_callback:
+                base_data = {
+                    "task": final_task,
+                    "tasks_found": selected_tasks,
+                    "periods": periods,
+                    "companies": companies,
+                    "company_pairs": company_pairs
+                }
+
+                try:
+                    save_callback(base_data, data_type="metadata")
+                    logger.info("基础元数据已保存")
+                except Exception as e:
+                    logger.error(f"保存基础元数据失败: {e}")
+
+            logger.info("开始逐个获取和处理报表数据...")
             for period in periods:
                 period_detail_id = period["id"]
                 period_name = period.get("periodDetailName", "未知月份")
 
                 for company_id, parent_id in company_pairs:
+                    processed_count += 1
 
                     try:
                         reports = self.get_reports(company_id, period_detail_id, task_id)
@@ -559,22 +574,47 @@ class AutoFinancialReportAPI:
                                 report_data = self._make_api_request(report_ids, company_id, parent_id)
                                 report_result = self.parse_table_data(report_data)
 
-                                all_data["reports_data"].append({
+                                # 构建单个单位的报表数据
+                                single_unit_data = {
                                     "period_name": period_name,
                                     "period_detail_id": period_detail_id,
                                     "company_id": company_id,
                                     "parent_id": parent_id,
                                     "reports": reports,
                                     "report_data": report_result
-                                })
-                                logger.info(f"成功获取 {period_name} - {company_id} 的报表数据")
+                                }
+
+                                if save_callback:
+                                    try:
+                                        save_callback(single_unit_data, data_type="report_data")
+                                        success_count += 1
+                                        logger.info(f"成功处理并保存 {period_name} - {company_id} 的报表数据")
+                                    except Exception as callback_error:
+                                        error_count += 1
+                                        logger.error(f"回调函数处理 {period_name} - {company_id} 数据失败: {callback_error}")
+                                else:
+                                    success_count += 1
+                                    logger.info(f"成功获取 {period_name} - {company_id} 的报表数据")
 
                     except Exception as e:
+                        error_count += 1
                         logger.warning(f"获取 {period_name} - {company_id} 的报表数据失败: {e}")
                         continue
 
-            logger.info(f"完成所有数据获取，共获取 {len(all_data['reports_data'])} 份报表数据")
-            return all_data
+            result = {
+                "task": final_task,
+                "tasks_found": selected_tasks,
+                "periods": periods,
+                "companies": companies,
+                "company_pairs": company_pairs,
+                "processed_count": processed_count,
+                "success_count": success_count,
+                "error_count": error_count,
+                "message": f"数据处理完成，共处理 {processed_count} 个单位，成功 {success_count} 个，失败 {error_count} 个"
+            }
+
+            logger.info(f"完成所有数据获取和处理，共处理 {processed_count} 个单位，成功 {success_count} 个，失败 {error_count} 个")
+            return result
 
         except Exception as e:
             logger.error(f"获取所有数据失败: {e}")

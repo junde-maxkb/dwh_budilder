@@ -404,7 +404,7 @@ class AutoFinancialReportAPI:
         :return:
         """
         if not self.access_token:
-            raise ValueError("未获取到access_token��请先执行登录")
+            raise ValueError("未获取到access_token请先执行登录")
 
         timestamp = int(time.time() * 1000)
 
