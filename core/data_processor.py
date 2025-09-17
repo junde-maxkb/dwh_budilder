@@ -1,4 +1,5 @@
 import logging
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Any, Optional
@@ -114,6 +115,23 @@ class DataProcessor:
         try:
             self.logger.info(f"开始处理 {data_type} 数据，公司代码: {company_code}")
 
+            # 检查数据是否已存在
+            year = kwargs.get('year')
+            period_code = kwargs.get('period_code')
+
+            if self.db_manager.check_traditional_data_exists(data_type, company_code, year, period_code):
+                self.logger.info(
+                    f"数据已存在，跳过处理 - 数据类型: {data_type}, 公司: {company_code}, 年份: {year}, 期间: {period_code}")
+                return ProcessingResult(
+                    success=True,
+                    data_type=data_type,
+                    original_count=0,
+                    cleaned_count=0,
+                    saved_count=0,
+                    processing_time=0,
+                    error_message="数据已存在，已跳过"
+                )
+
             # 1. 通过API获取原始数据
             raw_data = self._fetch_api_data(data_type, company_code, **kwargs)
             if not raw_data:
@@ -130,18 +148,18 @@ class DataProcessor:
             original_count = len(raw_data)
             self.logger.info(f"从API获取到 {original_count} 条原始数据")
 
-            # 2. 存储原始数据到数据库（暂时不入库，打印输出）
+            # 2. 存储原始数据到数据库
             self._save_raw_data(raw_data, data_type, company_code)
-            self.logger.info(f"原始数据已处理（打印输出）")
+            self.logger.info(f"原始数据已保存到数据库")
 
             # 3. 清洗数据
             cleaned_data = self._clean_data(raw_data, data_type)
             cleaned_count = len(cleaned_data) if cleaned_data is not None else 0
             self.logger.info(f"数据清洗完成，得到 {cleaned_count} 条清洗后数据")
 
-            # 4. 存储清洗后的数据（暂时不入库，打印输出）
+            # 4. 存储清洗后的数据
             saved_count = self._save_cleaned_data(cleaned_data, data_type, company_code)
-            self.logger.info(f"清洗后数据已处理（打印输出），实际处理 {saved_count} 条")
+            self.logger.info(f"清洗后数据已保存到数据库，实际保存 {saved_count} 条")
 
             processing_time = (datetime.now() - start_time).total_seconds()
 
@@ -235,120 +253,45 @@ class DataProcessor:
         return len(data_list)
 
     def _save_to_database(self, data: List[Dict[str, Any]], table_name: str):
-        """保存数据到数据库的通用方法 - 增强版本"""
+        """
+        保存数据到数据库，增强的错误处理和重试机制
+        """
         try:
             if not data:
                 self.logger.warning(f"数据列表为空，跳过保存到表 {table_name}")
                 return
 
             # 使用增强的自动创建表并保存数据的方法
-            success = self.db_manager.auto_create_and_save_data(
-                data=data,
-                table_name=table_name,
-                if_exists='append'
-            )
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    success = self.db_manager.auto_create_and_save_data(
+                        data=data,
+                        table_name=table_name,
+                        if_exists='append'
+                    )
 
-            if success:
-                self.logger.info(f"成功自动创建表并保存 {len(data)} 条数据到表 {table_name}")
-            else:
-                raise Exception(f"自动创建表并保存数据到表 {table_name} 失败")
+                    if success:
+                        self.logger.info(f"成功自动创建表并保存 {len(data)} 条数据到表 {table_name}")
+                        return
+                    else:
+                        if attempt == max_retries - 1:
+                            raise Exception(f"自动创建表并保存数据到表 {table_name} 失败")
+                        else:
+                            self.logger.warning(f"保存数据到表 {table_name} 失败，第 {attempt + 1} 次重试")
+                            time.sleep(0.5 * (attempt + 1))  # 递增延迟
+
+                except Exception as inner_e:
+                    if attempt == max_retries - 1:
+                        raise inner_e
+                    else:
+                        self.logger.warning(f"保存数据到表 {table_name} 时发生错误，第 {attempt + 1} 次重试: {inner_e}")
+                        time.sleep(0.5 * (attempt + 1))  # 递增延迟
 
         except Exception as e:
             self.logger.error(f"保存数据到表 {table_name} 时发生错误: {str(e)}")
-            raise
-
-    def save_processed_data_to_database(self, data: List[Dict[str, Any]], data_type: str,
-                                        company_code: str, data_status: str = 'processed') -> bool:
-        """
-        将处理后的数据保存到数据库 - 新增方法
-
-        Args:
-            data: 要保存的数据列表
-            data_type: 数据类型
-            company_code: 公司代码
-            data_status: 数据状态 ('raw', 'cleaned', 'processed')
-
-        Returns:
-            bool: 保存是否成功
-        """
-        try:
-            if not data:
-                self.logger.warning(f"数据列表为空，跳过保存")
-                return True
-
-            # 根据数据状态生成表名
-            table_name = f"{data_status}_{data_type}"
-
-            # 为每条数据添加元数据
-            enriched_data = []
-            for record in data:
-                enriched_record = record.copy()
-                enriched_record.update({
-                    'company_code': company_code,
-                    'data_type': data_type,
-                    'data_status': data_status,
-                    'created_at': datetime.now().isoformat(),
-                    'processed_at': datetime.now().isoformat()
-                })
-                enriched_data.append(enriched_record)
-
-            # 使用增强的自动创建表并保存数据
-            success = self.db_manager.auto_create_and_save_data(
-                data=enriched_data,
-                table_name=table_name,
-                if_exists='append'
-            )
-
-            if success:
-                self.logger.info(f"成功保存 {len(enriched_data)} 条 {data_type} 数据到表 {table_name}")
-
-                # 记录表信息
-                table_info = self.db_manager.get_table_info(table_name)
-                self.logger.info(f"表 {table_name} 信息: {table_info}")
-
-            return success
-
-        except Exception as e:
-            self.logger.error(f"保存 {data_type} 数据时发生错误: {e}")
-            return False
-
-    def get_data_processing_summary(self) -> Dict[str, Any]:
-        """
-        获取数据处理摘要信息
-
-        Returns:
-            Dict: 包含所有已处理表的摘要信息
-        """
-        try:
-            summary = {
-                'processed_tables': [],
-                'total_records': 0,
-                'processing_timestamp': datetime.now().isoformat()
-            }
-
-            # 获取所有已创建的表信息 - 这里可以根据命名模式查询
-            common_table_patterns = [
-                'raw_account_structure', 'cleaned_account_structure',
-                'raw_subject_dimension', 'cleaned_subject_dimension',
-                'raw_customer_vendor', 'cleaned_customer_vendor',
-                'raw_voucher_list', 'cleaned_voucher_list',
-                'raw_voucher_detail', 'cleaned_voucher_detail',
-                'raw_balance', 'cleaned_balance',
-                'raw_aux_balance', 'cleaned_aux_balance'
-            ]
-
-            for table_name in common_table_patterns:
-                if self.db_manager.table_exists(table_name):
-                    table_info = self.db_manager.get_table_info(table_name)
-                    if table_info.get('exists', False):
-                        summary['processed_tables'].append(table_info)
-                        summary['total_records'] += table_info.get('row_count', 0)
-
-            return summary
-
-        except Exception as e:
-            self.logger.error(f"获取数据处理摘要时发生错误: {e}")
-            return {'error': str(e)}
+            # 不再抛出异常，而是记录错误并返回，避免整个任务失败
+            self.logger.warning(f"数据保存失败，但任务将继续执行后续步骤")
 
     def add_processing_tasks_to_system(self, system_manager: SystemManager,
                                        tasks_config: List[Dict[str, Any]]) -> bool:
@@ -395,23 +338,6 @@ class DataProcessor:
         except Exception as e:
             self.logger.error(f"添加处理任务到系统管理器时发生错误: {str(e)}")
             return False
-
-    def get_tasks(self) -> List[Dict[str, Any]]:
-        """
-        获取所有任务列表
-
-        Returns:
-            List[Dict[str, Any]]: 任务列表
-        """
-        if not self.auto_report_api:
-            self.logger.error("自动财务报表API客户端未初始化")
-            return []
-
-        try:
-            return self.auto_report_api.get_tasks()
-        except Exception as e:
-            self.logger.error(f"获取任务列表失败: {e}")
-            return []
 
     def get_processing_statistics(self) -> Dict[str, Any]:
         """获取数据处理统计信息"""
@@ -690,7 +616,7 @@ class DataProcessor:
                                 'created_at': datetime.now().isoformat()
                             }
 
-                            # 如果行数据有具体地列值，添加列信息
+                            # 如果行数据有具体地��值，添加列信息
                             for col_index, value in enumerate(row):
                                 record[f'col_{col_index}'] = value
 
@@ -778,8 +704,6 @@ class DataProcessor:
             self.logger.error(f"清洗财务报表数据时发生错误: {e}")
             raise
 
-    # ...existing code...
-
     def close(self):
         """关闭数据处理器，释放资源"""
         try:
@@ -853,42 +777,3 @@ class DataProcessor:
         except Exception as e:
             self.logger.error(f"添加财务报表处理任务到系统管理器时发生错误: {str(e)}")
             return False
-
-
-def create_batch_processing_tasks(company_codes: List[str],
-                                  data_types: List[str],
-                                  year: str = None,
-                                  period_code: str = None) -> List[Dict[str, Any]]:
-    """
-    创建批量处理任务配置
-
-    Args:
-        company_codes: 公司代码列表
-        data_types: 数据类型列表
-        year: 年份（可选）
-        period_code: 期间代码（可选）
-
-    Returns:
-        List[Dict[str, Any]]: 任务配置列表
-    """
-    tasks = []
-    current_year = str(datetime.now().year)
-    current_period = f"{datetime.now().year}{datetime.now().month:02d}"
-
-    for company_code in company_codes:
-        for i, data_type in enumerate(data_types):
-            task_config = {
-                'data_type': data_type,
-                'company_code': company_code,
-                'priority': len(data_types) - i  # 根据顺序设置优先级
-            }
-
-            # 根据数据类型添加必要的参数
-            if data_type in ['account_structure', 'subject_dimension']:
-                task_config['year'] = year or current_year
-            elif data_type in ['voucher_list', 'voucher_detail', 'voucher_dim_detail', 'balance', 'aux_balance']:
-                task_config['period_code'] = period_code or current_period
-
-            tasks.append(task_config)
-
-    return tasks

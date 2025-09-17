@@ -66,7 +66,7 @@ RUN echo "deb http://mirrors.aliyun.com/debian bookworm main contrib non-free no
 
 # 安装 Oracle Instant Client 和基础工具
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    vim-tiny \
+    vim \
     libaio1 \
     curl \
     unzip \

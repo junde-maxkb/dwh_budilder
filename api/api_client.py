@@ -556,6 +556,7 @@ class AutoFinancialReportAPI:
                 except Exception as e:
                     logger.error(f"保存基础元数据失败: {e}")
 
+            # 为每个月份和每个公司获取报表数据并立即处理
             logger.info("开始逐个获取和处理报表数据...")
             for period in periods:
                 period_detail_id = period["id"]
@@ -565,6 +566,20 @@ class AutoFinancialReportAPI:
                     processed_count += 1
 
                     try:
+                        if save_callback:
+                            try:
+                                from database.database_manager import DataBaseManager
+                                db_manager = DataBaseManager()
+
+                                if db_manager.check_financial_report_data_exists(company_id, period_detail_id,
+                                                                                 "raw_financial_reports"):
+                                    logger.info(
+                                        f"财务报表数据已存在，跳过处理 - 单位: {company_id}, 期间: {period_name}")
+                                    success_count += 1
+                                    continue
+                            except Exception as check_error:
+                                logger.warning(f"检查数据存在性时发生错误: {check_error}，继续处理")
+
                         reports = self.get_reports(company_id, period_detail_id, task_id)
 
                         if reports:
@@ -591,7 +606,8 @@ class AutoFinancialReportAPI:
                                         logger.info(f"成功处理并保存 {period_name} - {company_id} 的报表数据")
                                     except Exception as callback_error:
                                         error_count += 1
-                                        logger.error(f"回调函数处理 {period_name} - {company_id} 数据失败: {callback_error}")
+                                        logger.error(
+                                            f"回调函数处理 {period_name} - {company_id} 数据失败: {callback_error}")
                                 else:
                                     success_count += 1
                                     logger.info(f"成功获取 {period_name} - {company_id} 的报表数据")
@@ -613,7 +629,8 @@ class AutoFinancialReportAPI:
                 "message": f"数据处理完成，共处理 {processed_count} 个单位，成功 {success_count} 个，失败 {error_count} 个"
             }
 
-            logger.info(f"完成所有数据获取和处理，共处理 {processed_count} 个单位，成功 {success_count} 个，失败 {error_count} 个")
+            logger.info(
+                f"完成所有数据获取和处理，共处理 {processed_count} 个单位，成功 {success_count} 个，失败 {error_count} 个")
             return result
 
         except Exception as e:
