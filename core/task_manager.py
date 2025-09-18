@@ -27,7 +27,7 @@ class TaskManager:
             'aux_balance'  # 辅助余额
         ]
 
-        self.company_codes = ['2SH0000001']
+        self.company_codes = ['2SH000603A']
 
     def check_and_add_new_data_tasks(self) -> bool:
         """
@@ -106,8 +106,8 @@ class TaskManager:
     def _check_traditional_data_tasks(self) -> bool:
         """检查传统财务数据新任务"""
         try:
-            # 生成包含最新月份的期间代码
-            current_period_codes = generate_period_codes(start_year=2023)
+            # 生成包含最新月份的期间代码，从2025年开始
+            current_period_codes = generate_period_codes(start_year=2025)
             logger.debug(f"生成当前期间代码，最新期间: {current_period_codes[-1] if current_period_codes else 'None'}")
 
             new_traditional_tasks = []
@@ -233,7 +233,7 @@ class TaskManager:
         """创建初始传统数据任务"""
         logger.info("步骤2: 初次启动 - 添加传统财务数据任务到队列")
 
-        period_codes = generate_period_codes(start_year=2023)
+        period_codes = generate_period_codes(start_year=2025)
         logger.info(f"生成了 {len(period_codes)} 个期间代码: {period_codes[:5]}...{period_codes[-5:]}")
 
         # 过滤已存在的数据

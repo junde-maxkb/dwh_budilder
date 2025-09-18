@@ -102,7 +102,7 @@ class DataBaseManager:
         return create_sql
 
     def _insert_dataframe_bulk(self, df: pd.DataFrame, table_name: str, conn) -> bool:
-        """使用批量插入方式插入 DataFrame 数据"""
+        """使用分批次批量插入方式插入 DataFrame 数据，解决 DPI-1015 错误和日期格式问题"""
         try:
             cursor = conn.cursor()
 
@@ -112,31 +112,117 @@ class DataBaseManager:
 
             insert_sql = f'INSERT INTO "{table_name}" ({", ".join(columns)}) VALUES ({placeholders})'
 
-            # 准备数据
-            data_rows = []
-            for _, row in df.iterrows():
-                row_data = []
-                for value in row:
-                    if pd.isna(value):
-                        row_data.append(None)
-                    elif isinstance(value, (pd.Timestamp, pd.DatetimeIndex)):
-                        row_data.append(value.to_pydatetime() if hasattr(value, 'to_pydatetime') else value)
-                    else:
-                        row_data.append(value)
-                data_rows.append(tuple(row_data))
+            batch_size = min(5000, len(df))
+            total_rows = len(df)
+            total_inserted = 0
 
-            # 批量插入
-            cursor.executemany(insert_sql, data_rows)
-            conn.commit()
+            logger.info(f"开始分批次插入数据到表 {table_name}，总记录数: {total_rows}，批次大小: {batch_size}")
+
+            # 分批处理数据
+            for start_idx in range(0, total_rows, batch_size):
+                end_idx = min(start_idx + batch_size, total_rows)
+                batch_df = df.iloc[start_idx:end_idx]
+
+                # 准备当前批次的数据
+                batch_data = []
+                for _, row in batch_df.iterrows():
+                    row_data = []
+                    for value in row:
+                        try:
+                            if value is None or (hasattr(value, '__len__') and len(value) == 0):
+                                row_data.append(None)
+                            elif pd.isna(value):
+                                row_data.append(None)
+                            elif isinstance(value, (pd.Timestamp, pd.DatetimeIndex)):
+                                row_data.append(value.to_pydatetime() if hasattr(value, 'to_pydatetime') else value)
+                            else:
+                                # 处理可能的日期字符串
+                                processed_value = self._process_date_value(value)
+                                row_data.append(processed_value)
+                        except (ValueError, TypeError) as e:
+                            # 如果无法判断空值，则使用原值
+                            logger.warning(f"无法处理数据值 {value}: {e}，使用原值")
+                            row_data.append(value)
+                    batch_data.append(tuple(row_data))
+
+                # 插入当前批次
+                try:
+                    cursor.executemany(insert_sql, batch_data)
+                    conn.commit()
+                    total_inserted += len(batch_data)
+
+                    # 记录进度
+                    progress = (total_inserted / total_rows) * 100
+                    logger.info(f"已插入 {total_inserted}/{total_rows} 条记录 ({progress:.1f}%)")
+
+                except Exception as batch_error:
+                    logger.error(f"插入第 {start_idx}-{end_idx} 批次数据时发生错误: {batch_error}")
+                    conn.rollback()
+                    cursor.close()
+                    return False
+
             cursor.close()
-
-            logger.info(f"成功插入 {len(data_rows)} 条记录到表 {table_name}")
+            logger.info(f"成功完成所有批次插入，总共插入 {total_inserted} 条记录到表 {table_name}")
             return True
 
         except Exception as e:
             logger.error(f"批量插入数据到表 {table_name} 时发生错误: {e}")
-            conn.rollback()
+            if 'conn' in locals():
+                conn.rollback()
             return False
+
+    def _process_date_value(self, value):
+        """
+        处理可能的日期值，确保日期格式正确
+
+        Args:
+            value: 原始值
+
+        Returns:
+            处理后的值
+        """
+        import re
+        from datetime import datetime
+
+        if value is None or pd.isna(value):
+            return None
+
+        # 如果已经是日期时间对象，直接返回
+        if isinstance(value, (datetime, pd.Timestamp)):
+            return value.to_pydatetime() if hasattr(value, 'to_pydatetime') else value
+
+        # 如果是字符串且看起来像日期，尝试转换
+        if isinstance(value, str):
+            value_str = value.strip()
+
+            # 常见的日期格式模式
+            date_patterns = [
+                (r'^\d{4}-\d{2}-\d{2}$', '%Y-%m-%d'),  # 2024-01-01
+                (r'^\d{4}/\d{2}/\d{2}$', '%Y/%m/%d'),  # 2024/01/01
+                (r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$', '%Y-%m-%d %H:%M:%S'),  # 2024-01-01 12:00:00
+                (r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$', '%Y-%m-%dT%H:%M:%S'),  # ISO format
+                (r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z?$', None),  # ISO with microseconds
+                (r'^\d{2}/\d{2}/\d{4}$', '%m/%d/%Y'),  # 01/01/2024
+                (r'^\d{2}-\d{2}-\d{4}$', '%m-%d-%Y'),  # 01-01-2024
+            ]
+
+            for pattern, date_format in date_patterns:
+                if re.match(pattern, value_str):
+                    try:
+                        if date_format:
+                            return datetime.strptime(value_str, date_format)
+                        else:
+                            # 对于复杂的ISO格式，使用pandas解析
+                            parsed_date = pd.to_datetime(value_str, errors='coerce')
+                            if not pd.isna(parsed_date):
+                                return parsed_date.to_pydatetime()
+                    except (ValueError, TypeError):
+                        # 如果解析失败，记录警告但继续处理
+                        logger.warning(f"无法解析日期格式: {value_str}")
+                        break
+
+        # 如果不是日期或解析失败，返回原值
+        return value
 
     def execute_sql(self, sql: str, params: Dict[str, Any] = None) -> bool:
         conn = self.connect()
@@ -517,13 +603,28 @@ class DataBaseManager:
         try:
             cursor = conn.cursor()
 
-            # 构建查询条件
+            column_sql = """
+                SELECT column_name 
+                FROM user_tab_columns 
+                WHERE table_name = UPPER(:table_name)
+            """
+            cursor.execute(column_sql, {"table_name": table_name})
+            existing_columns = [row[0].lower() for row in cursor.fetchall()]
+
+            # 构建查询条件，只使用存在的列
             where_clauses = []
             params = {}
 
             for key, value in conditions.items():
-                where_clauses.append(f'"{key}" = :{key}')
-                params[key] = value
+                if key.lower() in existing_columns or key.upper() in [col.upper() for col in existing_columns]:
+                    where_clauses.append(f'"{key}" = :{key}')
+                    params[key] = value
+                else:
+                    logger.warning(f"表 {table_name} 中不存在列 {key}，跳过此条件")
+
+            if not where_clauses:
+                logger.warning(f"表 {table_name} 中没有匹配的查询条件列，返回False")
+                return False
 
             where_clause = " AND ".join(where_clauses)
             sql = f'SELECT COUNT(*) FROM "{table_name}" WHERE {where_clause}'

@@ -1,7 +1,7 @@
 from datetime import datetime
 
 
-def generate_period_codes(start_year: int = 2023, end_year: int = None, end_month: int = None) -> list:
+def generate_period_codes(start_year: int = 2025, end_year: int = None, end_month: int = None) -> list:
     current_date = datetime.now()
     if end_year is None:
         end_year = current_date.year
@@ -22,5 +22,5 @@ def generate_period_codes(start_year: int = 2023, end_year: int = None, end_mont
 
 
 if __name__ == '__main__':
-    result = generate_period_codes(2023)
+    result = generate_period_codes(2025)
     print(result)
