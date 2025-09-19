@@ -7,6 +7,7 @@ from typing import List, Dict, Any
 import threading
 import time
 from common.config import config_manager
+import re
 
 load_dotenv()
 
@@ -68,7 +69,7 @@ class DataBaseManager:
             logger.error(f"OceanBase 连接失败: {e}")
             return None
 
-    def _generate_column_definition(self, dtype) -> str:
+    def _generate_column_definition(self, dtype, column_data=None) -> str:
         if pd.api.types.is_integer_dtype(dtype):
             return "NUMBER(19)"
         elif pd.api.types.is_float_dtype(dtype):
@@ -78,39 +79,98 @@ class DataBaseManager:
         elif pd.api.types.is_datetime64_any_dtype(dtype):
             return "DATE"
         elif pd.api.types.is_object_dtype(dtype):
-            return "VARCHAR2(255)"
+            # 动态检测字符串长度
+            if column_data is not None:
+                max_length = self._calculate_max_string_length(column_data)
+                # 根据最大长度选择合适的数据类型
+                if max_length <= 255:
+                    return "VARCHAR2(255)"
+                elif max_length <= 1000:
+                    return "VARCHAR2(1000)"
+                elif max_length <= 4000:
+                    return "VARCHAR2(4000)"
+                else:
+                    # 超过4000字符使用CLOB
+                    return "CLOB"
+            else:
+                # 默认使用较大的VARCHAR2
+                return "VARCHAR2(4000)"
         else:
             return "VARCHAR2(4000)"
+
+    def _calculate_max_string_length(self, column_data) -> int:
+        max_length = 0
+        try:
+            # 处理前100个样本来估算最大长度
+            sample_data = column_data.dropna().head(100) if hasattr(column_data, 'dropna') else column_data[:100]
+
+            for value in sample_data:
+                if value is not None:
+                    # 转换为字符串并计算长度
+                    str_value = str(value)
+                    # 考虑UTF-8编码，中文字符可能占用更多字节
+                    byte_length = len(str_value.encode('utf-8'))
+                    max_length = max(max_length, byte_length)
+
+            # 增加25%的缓冲空间
+            max_length = int(max_length * 1.25)
+
+        except Exception as e:
+            logger.warning(f"计算字符串长度时出错: {e}，使用默认长度")
+            max_length = 4000
+
+        return min(max_length, 32767)  # Oracle CLOB最大长度限制
 
     def _create_table_sql(self, df: pd.DataFrame, table_name: str) -> str:
         """生成创建表的 SQL 语句"""
         columns = []
         for column_name, dtype in df.dtypes.items():
-            # 清理列名（空格、横杠、特殊字符）
-            clean_column_name = (
-                str(column_name)
-                .strip()
-                .replace(" ", "_")
-                .replace("-", "_")
-                .replace("/", "_")
-            )
-            column_def = f'"{clean_column_name}" {self._generate_column_definition(dtype)}'
+            # 增强的列名清理逻辑，符合Oracle命名规范
+            clean_column_name = self._clean_column_name(str(column_name))
+            # 传入列数据用于动态长度检测
+            column_data = df[column_name] if column_name in df.columns else None
+            column_def = f'"{clean_column_name}" {self._generate_column_definition(dtype, column_data)}'
             columns.append(column_def)
 
         columns_sql = ",\n  ".join(columns)
         create_sql = f'CREATE TABLE "{table_name}" (\n  {columns_sql}\n)'
         return create_sql
 
+    def _clean_column_name(self, column_name: str) -> str:
+        import re
+
+        # 移除前后空格
+        clean_name = column_name.strip()
+
+        # 替换特殊字符为下划线
+        clean_name = re.sub(r'[^a-zA-Z0-9_$#]', '_', clean_name)
+
+        # 确保以字母开头
+        if clean_name and not clean_name[0].isalpha():
+            clean_name = 'COL_' + clean_name
+
+        # 限制长度为30字符（Oracle限制）
+        if len(clean_name) > 30:
+            clean_name = clean_name[:26] + '_' + str(hash(column_name) % 1000).zfill(3)
+
+        # 如果清理后为空，给一个默认名称
+        if not clean_name:
+            clean_name = f'COL_{hash(column_name) % 10000}'
+
+        return clean_name.upper()  # Oracle标识符通常大写
+
     def _insert_dataframe_bulk(self, df: pd.DataFrame, table_name: str, conn) -> bool:
-        """使用分批次批量插入方式插入 DataFrame 数据，解决 DPI-1015 错误和日期格式问题"""
         try:
             cursor = conn.cursor()
 
-            # 准备列名
-            columns = [f'"{col}"' for col in df.columns]
+            # 获取表结构信息，用于数据长度验证
+            table_structure = self._get_table_structure(table_name, conn)
+
+            # 准备列名 - 使用清理后的字段名与表结构匹配
+            cleaned_columns = [f'"{self._clean_column_name(str(col))}"' for col in df.columns]
             placeholders = ', '.join([':' + str(i + 1) for i in range(len(df.columns))])
 
-            insert_sql = f'INSERT INTO "{table_name}" ({", ".join(columns)}) VALUES ({placeholders})'
+            insert_sql = f'INSERT INTO "{table_name}" ({", ".join(cleaned_columns)}) VALUES ({placeholders})'
 
             batch_size = min(5000, len(df))
             total_rows = len(df)
@@ -127,22 +187,23 @@ class DataBaseManager:
                 batch_data = []
                 for _, row in batch_df.iterrows():
                     row_data = []
-                    for value in row:
+                    for i, value in enumerate(row):
                         try:
-                            if value is None or (hasattr(value, '__len__') and len(value) == 0):
-                                row_data.append(None)
-                            elif pd.isna(value):
-                                row_data.append(None)
-                            elif isinstance(value, (pd.Timestamp, pd.DatetimeIndex)):
-                                row_data.append(value.to_pydatetime() if hasattr(value, 'to_pydatetime') else value)
-                            else:
-                                # 处理可能的日期字符串
-                                processed_value = self._process_date_value(value)
-                                row_data.append(processed_value)
-                        except (ValueError, TypeError) as e:
-                            # 如果无法判断空值，则使用原值
-                            logger.warning(f"无法处理数据值 {value}: {e}，使用原值")
-                            row_data.append(value)
+                            # 增强的数据值处理逻辑
+                            processed_value = self._process_data_value(value)
+
+                            # 数据长度验证和截断
+                            if table_structure and i < len(table_structure):
+                                column_info = table_structure[i]
+                                processed_value = self._validate_and_truncate_value(
+                                    processed_value, column_info
+                                )
+
+                            row_data.append(processed_value)
+                        except Exception as e:
+                            # 如果无法处理数据值，记录详细错误并使用None
+                            logger.warning(f"无法处理数据值，使用None替代")
+                            row_data.append(None)
                     batch_data.append(tuple(row_data))
 
                 # 插入当前批次
@@ -171,58 +232,73 @@ class DataBaseManager:
                 conn.rollback()
             return False
 
-    def _process_date_value(self, value):
-        """
-        处理可能的日期值，确保日期格式正确
+    def _get_table_structure(self, table_name: str, conn) -> List[Dict]:
+        try:
+            cursor = conn.cursor()
+            sql = """
+                SELECT column_name, data_type, data_length, char_length
+                FROM user_tab_columns 
+                WHERE table_name = UPPER(:table_name)
+                ORDER BY column_id
+            """
+            cursor.execute(sql, {"table_name": table_name})
 
-        Args:
-            value: 原始值
+            structure = []
+            for row in cursor.fetchall():
+                structure.append({
+                    'column_name': row[0],
+                    'data_type': row[1],
+                    'data_length': row[2],
+                    'char_length': row[3]
+                })
 
-        Returns:
-            处理后的值
-        """
-        import re
-        from datetime import datetime
+            cursor.close()
+            return structure
 
-        if value is None or pd.isna(value):
+        except Exception as e:
+            logger.warning(f"获取表结构失败: {e}")
+            return []
+
+    def _validate_and_truncate_value(self, value, column_info: Dict):
+        if value is None:
             return None
 
-        # 如果已经是日期时间对象，直接返回
-        if isinstance(value, (datetime, pd.Timestamp)):
-            return value.to_pydatetime() if hasattr(value, 'to_pydatetime') else value
+        data_type = column_info.get('data_type', '')
+        char_length = column_info.get('char_length', 0)
+        data_length = column_info.get('data_length', 0)
 
-        # 如果是字符串且看起来像日期，尝试转换
-        if isinstance(value, str):
-            value_str = value.strip()
+        if data_type.startswith('VARCHAR') and isinstance(value, str):
+            # 使用char_length（字符长度）而不是data_length（字节长度）
+            max_length = char_length if char_length > 0 else data_length
 
-            # 常见的日期格式模式
-            date_patterns = [
-                (r'^\d{4}-\d{2}-\d{2}$', '%Y-%m-%d'),  # 2024-01-01
-                (r'^\d{4}/\d{2}/\d{2}$', '%Y/%m/%d'),  # 2024/01/01
-                (r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$', '%Y-%m-%d %H:%M:%S'),  # 2024-01-01 12:00:00
-                (r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$', '%Y-%m-%dT%H:%M:%S'),  # ISO format
-                (r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z?$', None),  # ISO with microseconds
-                (r'^\d{2}/\d{2}/\d{4}$', '%m/%d/%Y'),  # 01/01/2024
-                (r'^\d{2}-\d{2}-\d{4}$', '%m-%d-%Y'),  # 01-01-2024
-            ]
+            if len(value) > max_length:
+                logger.warning(
+                    f"数据值长度 {len(value)} 超过列 {column_info['column_name']} 的最大长度 {max_length}，进��截断")
+                truncated = self._safe_truncate_string(value, max_length)
+                return truncated
+        elif data_type == 'CLOB':
+            if isinstance(value, str) and len(value) > 32767:
+                logger.warning(f"CLOB数据过长 {len(value)}，截断到32767字符")
+                return value[:32767]
 
-            for pattern, date_format in date_patterns:
-                if re.match(pattern, value_str):
-                    try:
-                        if date_format:
-                            return datetime.strptime(value_str, date_format)
-                        else:
-                            # 对于复杂的ISO格式，使用pandas解析
-                            parsed_date = pd.to_datetime(value_str, errors='coerce')
-                            if not pd.isna(parsed_date):
-                                return parsed_date.to_pydatetime()
-                    except (ValueError, TypeError):
-                        # 如果解析失败，记录警告但继续处理
-                        logger.warning(f"无法解析日期格式: {value_str}")
-                        break
-
-        # 如果不是日期或解析失败，返回原值
         return value
+
+    def _safe_truncate_string(self, text: str, max_length: int) -> str:
+        if len(text) <= max_length:
+            return text
+
+        if max_length > 3:
+            truncated = text[:max_length - 3] + "..."
+        else:
+            truncated = text[:max_length]
+
+        # 确保截断后的字符串可以正确编码
+        try:
+            truncated.encode('utf-8')
+            return truncated
+        except UnicodeEncodeError:
+            # 如果编码失败，进一步缩短
+            return text[:max_length // 2] + "..."
 
     def execute_sql(self, sql: str, params: Dict[str, Any] = None) -> bool:
         conn = self.connect()
@@ -277,53 +353,7 @@ class DataBaseManager:
             if conn:
                 conn.close()
 
-    def create_table_from_dataframe(self, df: pd.DataFrame, table_name: str) -> bool:
-        """
-        如果表不存在则根据 DataFrame 创建表
-        使用锁机制防止并发创建表的竞态条件
-        """
-        # 获取表级锁
-        table_lock = self._get_table_lock(table_name)
-
-        with table_lock:
-            # 在锁内再次检查表是否存在，防止重复创建
-            if self.table_exists(table_name):
-                logger.info(f"表 {table_name} 已存在，跳过创建")
-                return True
-
-            conn = self.connect()
-            if not conn:
-                return False
-
-            try:
-                create_sql = self._create_table_sql(df, table_name)
-                cursor = conn.cursor()
-                cursor.execute(create_sql)
-                conn.commit()
-                cursor.close()
-
-                logger.info(f"成功创建表 {table_name}")
-                return True
-            except cx_Oracle.DatabaseError as e:
-                error_code = e.args[0].code if hasattr(e.args[0], 'code') else None
-                if error_code == 955:  # ORA-00955: name is already used by an existing object
-                    logger.warning(f"表 {table_name} 已存在（并发创建），继续执行")
-                    return True
-                else:
-                    logger.error(f"创建表 {table_name} 时发生数据库错误: {e}")
-                    return False
-            except Exception as e:
-                logger.error(f"创建表 {table_name} 时发生错误: {e}")
-                return False
-            finally:
-                if conn:
-                    conn.close()
-
     def _safe_create_table(self, df: pd.DataFrame, table_name: str, conn) -> bool:
-        """
-        安全创建表的内部方法，处理并发创建的异常情况
-        增强的错误处理和缓存更新
-        """
         try:
             # 再次检查表是否存在（双重检查），避免并发创建
             if self.table_exists(table_name):
@@ -375,13 +405,13 @@ class DataBaseManager:
                     logger.error(f"表 {table_name} 不存在，但应该已经创建")
                     return False
             elif if_exists == 'replace':
-                # 删除表并重新创建
+                # 删除表��重新创建
                 self.execute_sql(f'DROP TABLE "{table_name}"')
                 if not self._safe_create_table(df, table_name, conn):
                     return False
                 logger.info(f"表 {table_name} 已被替换")
             elif if_exists == 'fail':
-                logger.error(f"表 {table_name} 已存在且 if_exists='fail'")
+                logger.error(f"表 {table_name} 已存在�� if_exists='fail'")
                 return False
 
             logger.info(f"开始插入数据到表 {table_name}，模式: {if_exists}")
@@ -474,7 +504,7 @@ class DataBaseManager:
         for column in df_optimized.columns:
             # 处理字符串类型
             if df_optimized[column].dtype == 'object':
-                # 尝试转换为数值类型
+                # 尝试转换为数据类型
                 if self._is_numeric_column(df_optimized[column]):
                     df_optimized[column] = pd.to_numeric(df_optimized[column], errors='ignore')
                 # 尝试转换为日期类型
@@ -504,7 +534,7 @@ class DataBaseManager:
         return df_optimized
 
     def _is_numeric_column(self, series: pd.Series) -> bool:
-        """检查列是否应该转换为数值类型"""
+        """检查列是否应该转为数值类型"""
         sample_values = series.dropna().head(100)
         if len(sample_values) == 0:
             return False
@@ -546,7 +576,7 @@ class DataBaseManager:
     def check_traditional_data_exists(self, data_type: str, company_code: str, year: str = None,
                                       period_code: str = None) -> bool:
         """
-        检查传统财务数据是否已存在
+        检查传统财务数据是否存在
 
         Args:
             data_type: 数据类型
@@ -583,16 +613,6 @@ class DataBaseManager:
         return self.check_data_exists(table_name, conditions)
 
     def check_data_exists(self, table_name: str, conditions: Dict[str, Any]) -> bool:
-        """
-        检查数据是否已存在于数据库中
-
-        Args:
-            table_name: 表名
-            conditions: 查询条件字典
-
-        Returns:
-            bool: 数据是否存在
-        """
         if not self.table_exists(table_name):
             return False
 
@@ -646,17 +666,6 @@ class DataBaseManager:
 
     def check_financial_report_data_exists(self, company_id: str, period_detail_id: str,
                                            table_name: str = "raw_financial_reports") -> bool:
-        """
-        检查财务报表数据是否已存在
-
-        Args:
-            company_id: 公司ID
-            period_detail_id: 期间详细ID
-            table_name: 表名
-
-        Returns:
-            bool: 数据是否存在
-        """
         conditions = {
             'company_id': company_id,
             'period_detail_id': period_detail_id
@@ -664,7 +673,200 @@ class DataBaseManager:
         return self.check_data_exists(table_name, conditions)
 
     def close_engine(self):
-        """
-        关闭数据库引擎（保持兼容性）
-        """
         logger.info("数据库管理器已关闭")
+
+    def _process_date_value(self, value):
+        import re
+        from datetime import datetime
+
+        if value is None or pd.isna(value):
+            return None
+
+        # 如果已经是日期时间对象，直接返回
+        if isinstance(value, (datetime, pd.Timestamp)):
+            return value.to_pydatetime() if hasattr(value, 'to_pydatetime') else value
+
+        # 如果是字符串且看起来像日期，尝试转换
+        if isinstance(value, str):
+            value_str = value.strip()
+
+            # 检查无效日期格式
+            if self._is_invalid_date_format(value_str):
+                # logger.warning(f"检测到无效日期格式: {value_str}，返回None")
+                return None
+
+            # 常见的日期格式模式
+            date_patterns = [
+                (r'^\d{4}-\d{2}-\d{2}$', '%Y-%m-%d'),  # 2024-01-01
+                (r'^\d{4}/\d{2}/\d{2}$', '%Y/%m/%d'),  # 2024/01/01
+                (r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$', '%Y-%m-%d %H:%M:%S'),  # 2024-01-01 12:00:00
+                (r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$', '%Y-%m-%dT%H:%M:%S'),  # ISO format
+                (r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z?$', None),  # ISO with microseconds
+                (r'^\d{2}/\d{2}/\d{4}$', '%m/%d/%Y'),  # 01/01/2024
+                (r'^\d{2}-\d{2}-\d{4}$', '%m-%d-%Y'),  # 01-01-2024
+            ]
+
+            for pattern, date_format in date_patterns:
+                if re.match(pattern, value_str):
+                    try:
+                        if date_format:
+                            parsed_date = datetime.strptime(value_str, date_format)
+                            # 验证日期的合理性
+                            if self._is_reasonable_date(parsed_date):
+                                return parsed_date
+                        else:
+                            # 对于复杂的ISO格式，使用pandas解析
+                            parsed_date = pd.to_datetime(value_str, errors='coerce')
+                            if not pd.isna(parsed_date) and self._is_reasonable_date(parsed_date):
+                                return parsed_date.to_pydatetime()
+                    except (ValueError, TypeError):
+                        # 如果解析失败，记录警告但继续���理
+                        logger.warning(f"��法解析日期格式: {value_str}")
+                        break
+
+        return value
+
+    def _is_reasonable_date(self, date_obj) -> bool:
+        if date_obj is None:
+            return False
+
+        year = date_obj.year if hasattr(date_obj, 'year') else None
+        if year is None:
+            return False
+
+        return 1900 <= year <= 2100
+
+    def _process_data_value(self, value):
+        # 处理None和NaN值 - 使用更安全的检查方式
+        try:
+            if value is None:
+                return None
+            # 安全的NaN检查，避免pandas数组歧义
+            if hasattr(pd, 'isna') and pd.isna(value):
+                return None
+        except (ValueError, TypeError):
+            # 如果pandas.isna()对某些类型报错，跳过
+            pass
+
+        # 处理列表和数组类型数据 - 使用isinstance而不是真值判断
+        if isinstance(value, (list, tuple)):
+            try:
+                # 使用len()而不是直接判断真���，避免pandas数组歧义
+                if len(value) == 0:
+                    return None
+                # 对于复杂数组数据，转换为JSON字符串
+                import json
+                return json.dumps(value, ensure_ascii=False)
+            except Exception as e:
+                logger.warning(f"JSON序列化失败: {e}，使用字符串转换")
+                return str(value)
+
+        # 处理字典类型数据
+        if isinstance(value, dict):
+            try:
+                import json
+                return json.dumps(value, ensure_ascii=False)
+            except Exception as e:
+                logger.warning(f"字典JSON序列化失败: {e}，使用字符串转换")
+                return str(value)
+
+        # 处理numpy数组和pandas对象 - 避免直接真值判断
+        if hasattr(value, '__array__') or (hasattr(value, '__len__') and not isinstance(value, str)):
+            try:
+                # 检查是否为pandas Series或DataFrame
+                if hasattr(value, 'empty'):
+                    # 这是pandas对象
+                    if value.empty:
+                        return None
+                    # 转换为列表后处理
+                    try:
+                        if hasattr(value, 'tolist'):
+                            list_value = value.tolist()
+                        else:
+                            list_value = list(value)
+                        return self._process_data_value(list_value)
+                    except Exception as e:
+                        logger.warning(f"pandas对象转换失败: {e}，使用字符串转换")
+                        return str(value)
+
+                # 尝试获取长度
+                try:
+                    length = len(value)
+                except TypeError:
+                    # 如果无法获取长度，说明不是序列类型
+                    return value
+
+                if length == 0:
+                    return None
+                elif length == 1:
+                    # 单元素数组，提取值
+                    try:
+                        single_value = value[0] if hasattr(value, '__getitem__') else value
+                        return self._process_data_value(single_value)  # 递归处理
+                    except (IndexError, TypeError):
+                        return str(value)
+
+                # 多元素数组，转换为JSON字符串
+                try:
+                    import json
+                    # 转换为列表后序列化
+                    if hasattr(value, 'tolist'):
+                        return json.dumps(value.tolist(), ensure_ascii=False)
+                    else:
+                        return json.dumps(list(value), ensure_ascii=False)
+                except Exception as e:
+                    logger.warning(f"数组JSON序列化失败: {e}，使用字符串转换")
+                    return str(value)
+
+            except Exception as e:
+                logger.warning(f"处理数组类型数据时出错: {e}，使用字符串转换")
+                return str(value)
+
+        # 处理pandas时间戳
+        if isinstance(value, (pd.Timestamp, pd.DatetimeIndex)):
+            try:
+                return value.to_pydatetime() if hasattr(value, 'to_pydatetime') else value
+            except Exception:
+                return str(value)
+
+        # 处理字符串类型的日期
+        if isinstance(value, str):
+            # 检查是否为无效日期格式
+            if self._is_invalid_date_format(value):
+                # logger.warning(f"检测到无效日期格式: {value}，使用None替代")
+                return None
+            # 尝试日期解析
+            try:
+                date_value = self._process_date_value(value)
+                return date_value
+            except Exception:
+                return value
+
+        # 处理其他类型
+        return value
+
+    def _is_invalid_date_format(self, date_str: str) -> bool:
+        # 无效日期格式模式
+        invalid_patterns = [
+            r'\d{4}-13-\d{2}',  # 13月
+            r'\d{4}-\d{2}-99',  # 99日
+            r'\d{4}-99-\d{2}',  # 99月
+            r'1601-13-99',  # 特定的无效格式
+            r'1602-13-99',
+            r'2211-13-99',
+            r'2221-99-99'
+        ]
+
+        date_str = str(date_str).strip()
+        for pattern in invalid_patterns:
+            if re.match(pattern, date_str):
+                return True
+
+        # 检查月份和日期范围
+        date_parts = re.match(r'(\d{4})-(\d{2})-(\d{2})', date_str)
+        if date_parts:
+            year, month, day = map(int, date_parts.groups())
+            if month > 12 or month < 1 or day > 31 or day < 1:
+                return True
+
+        return False
