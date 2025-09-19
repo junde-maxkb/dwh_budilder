@@ -106,14 +106,20 @@ class DataBaseManager:
 
             for value in sample_data:
                 if value is not None:
-                    # 转换为字符串并计算长度
-                    str_value = str(value)
-                    # 考虑UTF-8编码，中文字符可能占用更多字节
-                    byte_length = len(str_value.encode('utf-8'))
-                    max_length = max(max_length, byte_length)
+                    # 先通过 _process_data_value 处理数据，获得最终会存储的值
+                    processed_value = self._process_data_value(value)
+                    if processed_value is not None:
+                        # 转换为字符串并计算长度
+                        str_value = str(processed_value)
+                        # 考虑UTF-8编码，中文字符可能占用更多字节
+                        byte_length = len(str_value.encode('utf-8'))
+                        max_length = max(max_length, byte_length)
 
-            # 增加25%的缓冲空间
-            max_length = int(max_length * 1.25)
+            # 增加50%的缓冲空间，以应对更复杂的数据
+            max_length = int(max_length * 1.5)
+
+            # 确保至少有基本长度
+            max_length = max(max_length, 255)
 
         except Exception as e:
             logger.warning(f"计算字符串长度时出错: {e}，使用默认长度")
@@ -137,36 +143,23 @@ class DataBaseManager:
         return create_sql
 
     def _clean_column_name(self, column_name: str) -> str:
-        import re
-
-        # 移除前后空格
         clean_name = column_name.strip()
-
-        # 替换特殊字符为下划线
         clean_name = re.sub(r'[^a-zA-Z0-9_$#]', '_', clean_name)
-
-        # 确保以字母开头
         if clean_name and not clean_name[0].isalpha():
             clean_name = 'COL_' + clean_name
-
-        # 限制长度为30字符（Oracle限制）
         if len(clean_name) > 30:
             clean_name = clean_name[:26] + '_' + str(hash(column_name) % 1000).zfill(3)
-
-        # 如果清理后为空，给一个默认名称
         if not clean_name:
             clean_name = f'COL_{hash(column_name) % 10000}'
 
-        return clean_name.upper()  # Oracle标识符通常大写
+        return clean_name.upper()
 
     def _insert_dataframe_bulk(self, df: pd.DataFrame, table_name: str, conn) -> bool:
         try:
             cursor = conn.cursor()
 
-            # 获取表结构信息，用于数据长度验证
             table_structure = self._get_table_structure(table_name, conn)
 
-            # 准备列名 - 使用清理后的字段名与表结构匹配
             cleaned_columns = [f'"{self._clean_column_name(str(col))}"' for col in df.columns]
             placeholders = ', '.join([':' + str(i + 1) for i in range(len(df.columns))])
 
@@ -202,7 +195,7 @@ class DataBaseManager:
                             row_data.append(processed_value)
                         except Exception as e:
                             # 如果无法处理数据值，记录详细错误并使用None
-                            logger.warning(f"无法处理数据值，使用None替代")
+                            # logger.warning(f"无法处理数据值，使用None替代")
                             row_data.append(None)
                     batch_data.append(tuple(row_data))
 
@@ -271,11 +264,25 @@ class DataBaseManager:
             # 使用char_length（字符长度）而不是data_length（字节长度）
             max_length = char_length if char_length > 0 else data_length
 
-            if len(value) > max_length:
-                logger.warning(
-                    f"数据值长度 {len(value)} 超过列 {column_info['column_name']} 的最大长度 {max_length}，进��截断")
+            # 计算字符串的实际字节长度（考虑UTF-8编码）
+            try:
+                byte_length = len(value.encode('utf-8'))
+                char_count = len(value)
+
+                # 如果字节长度超过限制，或者字符数超过限制，都需要截断
+                if byte_length > max_length or char_count > max_length:
+                    logger.warning(
+                        f"数据值长度超过限制 - 字符数: {char_count}, 字节数: {byte_length}, "
+                        f"列 {column_info['column_name']} 最大长度: {max_length}，进行截断")
+
+                    # 安全截断，确保不超过字节和字符限制
+                    truncated = self._safe_truncate_string_by_bytes(value, max_length)
+                    return truncated
+            except UnicodeEncodeError as e:
+                logger.warning(f"字符编码错误: {e}，使用默认截断方式")
                 truncated = self._safe_truncate_string(value, max_length)
                 return truncated
+
         elif data_type == 'CLOB':
             if isinstance(value, str) and len(value) > 32767:
                 logger.warning(f"CLOB数据过长 {len(value)}，截断到32767字符")
@@ -299,6 +306,50 @@ class DataBaseManager:
         except UnicodeEncodeError:
             # 如果编码失败，进一步缩短
             return text[:max_length // 2] + "..."
+
+    def _safe_truncate_string_by_bytes(self, text: str, max_bytes: int) -> str:
+        if not text:
+            return text
+
+        # 如果原文本的字节长度已经符合要求，直接返回
+        if len(text.encode('utf-8')) <= max_bytes:
+            return text
+
+        # 为"..."预留3个字节
+        if max_bytes <= 3:
+            return text.encode('utf-8')[:max_bytes].decode('utf-8', errors='ignore')
+
+        target_bytes = max_bytes - 3
+
+        # 二分查找最大可截断的字符位置
+        left, right = 0, len(text)
+        result_pos = 0
+
+        while left <= right:
+            mid = (left + right) // 2
+            try:
+                substr = text[:mid]
+                if len(substr.encode('utf-8')) <= target_bytes:
+                    result_pos = mid
+                    left = mid + 1
+                else:
+                    right = mid - 1
+            except UnicodeError:
+                right = mid - 1
+
+        # 安全截断并添加省略号
+        try:
+            truncated = text[:result_pos] + "..."
+            # 验证截断结果的字节长度
+            if len(truncated.encode('utf-8')) <= max_bytes:
+                return truncated
+            else:
+                # 如果还是太长，进一步缩短
+                return text[:result_pos - 1] + "..."
+        except (UnicodeError, IndexError):
+            # 如果出现编码错误，使用更保守的方法
+            safe_text = text.encode('utf-8')[:target_bytes].decode('utf-8', errors='ignore')
+            return safe_text + "..."
 
     def execute_sql(self, sql: str, params: Dict[str, Any] = None) -> bool:
         conn = self.connect()
@@ -405,7 +456,6 @@ class DataBaseManager:
                     logger.error(f"表 {table_name} 不存在，但应该已经创建")
                     return False
             elif if_exists == 'replace':
-                # 删除表��重新创建
                 self.execute_sql(f'DROP TABLE "{table_name}"')
                 if not self._safe_create_table(df, table_name, conn):
                     return False
@@ -751,24 +801,31 @@ class DataBaseManager:
         # 处理列表和数组类型数据 - 使用isinstance而不是真值判断
         if isinstance(value, (list, tuple)):
             try:
-                # 使用len()而不是直接判断真���，避免pandas数组歧义
+                # 使用len()而不是直接判断真值，避免pandas数组歧义
                 if len(value) == 0:
                     return None
-                # 对于复杂数组数据，转换为JSON字符串
+                # 对于复杂数组数据，先尝试转换为JSON字符串，然后检查长度
                 import json
-                return json.dumps(value, ensure_ascii=False)
+                json_str = json.dumps(value, ensure_ascii=False, separators=(',', ':'))
+                # 限制JSON字符串的最大长度，防止超过数据库列限制
+                # 进一步减少长度限制，确保安全
+                return self._safe_truncate_string_by_bytes(json_str, 2000)  # 更保守的长度限制
             except Exception as e:
-                logger.warning(f"JSON序列化失败: {e}，使用字符串转换")
-                return str(value)
+                logger.warning(f"JSON序列化失败: {e}，使用截断的字符串转换")
+                str_value = str(value)
+                return self._safe_truncate_string_by_bytes(str_value, 2000)
 
         # 处理字典类型数据
         if isinstance(value, dict):
             try:
                 import json
-                return json.dumps(value, ensure_ascii=False)
+                json_str = json.dumps(value, ensure_ascii=False, separators=(',', ':'))
+                # 限制JSON字符串的最大长度
+                return self._safe_truncate_string_by_bytes(json_str, 2000)
             except Exception as e:
-                logger.warning(f"字典JSON序列化失败: {e}，使用字符串转换")
-                return str(value)
+                logger.warning(f"字典JSON序列化失败: {e}，使用截断的字符串转换")
+                str_value = str(value)
+                return self._safe_truncate_string_by_bytes(str_value, 2000)
 
         # 处理numpy数组和pandas对象 - 避免直接真值判断
         if hasattr(value, '__array__') or (hasattr(value, '__len__') and not isinstance(value, str)):
@@ -786,8 +843,9 @@ class DataBaseManager:
                             list_value = list(value)
                         return self._process_data_value(list_value)
                     except Exception as e:
-                        logger.warning(f"pandas对象转换失败: {e}，使用字符串转换")
-                        return str(value)
+                        logger.warning(f"pandas对象转换失败: {e}，使用截断的字符串转换")
+                        str_value = str(value)
+                        return self._safe_truncate_string_by_bytes(str_value, 2000)
 
                 # 尝试获取长度
                 try:
@@ -804,30 +862,35 @@ class DataBaseManager:
                         single_value = value[0] if hasattr(value, '__getitem__') else value
                         return self._process_data_value(single_value)  # 递归处理
                     except (IndexError, TypeError):
-                        return str(value)
+                        str_value = str(value)
+                        return self._safe_truncate_string_by_bytes(str_value, 2000)
 
                 # 多元素数组，转换为JSON字符串
                 try:
                     import json
                     # 转换为列表后序列化
                     if hasattr(value, 'tolist'):
-                        return json.dumps(value.tolist(), ensure_ascii=False)
+                        json_str = json.dumps(value.tolist(), ensure_ascii=False, separators=(',', ':'))
                     else:
-                        return json.dumps(list(value), ensure_ascii=False)
+                        json_str = json.dumps(list(value), ensure_ascii=False, separators=(',', ':'))
+                    return self._safe_truncate_string_by_bytes(json_str, 2000)
                 except Exception as e:
-                    logger.warning(f"数组JSON序列化失败: {e}，使用字符串转换")
-                    return str(value)
+                    logger.warning(f"数组JSON序列化失败: {e}，使用截断的字符串转换")
+                    str_value = str(value)
+                    return self._safe_truncate_string_by_bytes(str_value, 2000)
 
             except Exception as e:
-                logger.warning(f"处理数组类型数据时出错: {e}，使用字符串转换")
-                return str(value)
+                logger.warning(f"处理数组类型数据时出错: {e}，使用截断的字符串转换")
+                str_value = str(value)
+                return self._safe_truncate_string_by_bytes(str_value, 2000)
 
         # 处理pandas时间戳
         if isinstance(value, (pd.Timestamp, pd.DatetimeIndex)):
             try:
                 return value.to_pydatetime() if hasattr(value, 'to_pydatetime') else value
             except Exception:
-                return str(value)
+                str_value = str(value)
+                return self._safe_truncate_string_by_bytes(str_value, 2000)
 
         # 处理字符串类型的日期
         if isinstance(value, str):
@@ -835,6 +898,10 @@ class DataBaseManager:
             if self._is_invalid_date_format(value):
                 # logger.warning(f"检测到无效日期格式: {value}，使用None替代")
                 return None
+            # 如果字符串过长，进行截断
+            if len(value) > 2000:
+                logger.warning(f"字符串过长({len(value)}字符)，截断到2000字符")
+                return self._safe_truncate_string_by_bytes(value, 2000)
             # 尝试日期解析
             try:
                 date_value = self._process_date_value(value)
@@ -842,7 +909,13 @@ class DataBaseManager:
             except Exception:
                 return value
 
-        # 处理其他类型
+        # 处理其他类型 - 确保转换为字符串后不会过长
+        if value is not None:
+            str_value = str(value)
+            if len(str_value) > 2000:
+                logger.warning(f"值转换为字符串后过长({len(str_value)}字符)，截断到2000字符")
+                return self._safe_truncate_string_by_bytes(str_value, 2000)
+
         return value
 
     def _is_invalid_date_format(self, date_str: str) -> bool:
