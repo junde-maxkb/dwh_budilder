@@ -1,0 +1,268 @@
+// 获取某年度会计科目结构
+{
+  "success": true,
+  "message": "",
+  "code": 200,
+  "result": [
+    {
+      "sacccode": "1001",
+      "saccname": "库存现金",
+      "sacctype": "1005",
+      "saccind": "借"
+    },
+    {
+      "sacccode": "6901-9999",
+      "saccname": "结转",
+      "sacctype": "1009",
+      "saccind": "借",
+      "saccOutputTemp": "三"
+    }
+  ],
+  "timestamp": 1756677717716
+}
+
+// 获取科目辅助核算对应关系
+{
+  "success": true,
+  "message": "",
+  "code": 200,
+  "result": [
+    {
+      "sacccode": "1001",
+      "sdimensionCode": "CU"
+    }
+  ],
+  "timestamp": 1756678532920
+}
+
+// 获取客商字典
+{
+  "success": true,
+  "message": "",
+  "code": 200,
+  "result": [
+    {
+      "sbpName": "北京广泰鸿宇建设工程有限公司",
+      "screditCode": "91110109MA00B12A47",
+      "sbptype": "2",
+      "strade": "11",
+      "sshortname": "北京广泰鸿宇建设工程有限公司",
+      "sbank": "",
+      "saccountCode": "",
+      "saccountName": "北京广泰鸿宇建设工程有限公司"
+    },
+    {
+      "sbpName": "夏邑县万家百货店",
+      "screditCode": "92411426MA45WXPE70",
+      "sbptype": "2",
+      "strade": "11",
+      "sshortname": "夏邑县万家百货店",
+      "sbank": "",
+      "saccountCode": "",
+      "saccountName": "夏邑县万家百货店"
+    }
+  ],
+  "timestamp": 1756679632202
+}
+
+// 获取凭证目录
+{
+  "success": true,
+  "message": "",
+  "code": 200,
+  "result": [
+    {
+      "sdocId": "2SH000603A|2025-01|2|1",
+      "sdocNo": "1",
+      "sdocDate": "2025-01-07",
+      "sdocTypeCode": "2",
+      "sentriedby": "孙浩",
+      "scheckeby": "朱彦彦 李雪莲",
+      "isnetbank": false,
+      "money": 3873529.2,
+      "excerpta": "朱彦彦报上月银行存款余额转回"
+    }
+  ],
+  "timestamp": 1745942562827
+}
+
+// 获取凭证明细
+{
+  "success": true,
+  "message": "",
+  "code": 200,
+  "result": [
+    {
+      "sdocId": "2SH000603A|2025-01|4|13",
+      "idocLineId": 0,
+      "sacccode": "1002-1-1",
+      "bcdtDbt": "1",
+      "ndebit": 0,
+      "ncredit": 42604.68,
+      "sexcerpta": "付枣庄市1月份医疗、生育、工伤、失业保险费用",
+      "soppAcccode": "2241",
+      "id": "a24282362b2647d3bf0367c1dc97cde7",
+      "createTime": "2025-04-30 00:34:48",
+      "updateTime": "2025-04-30 00:34:48",
+      "nexchange": 0,
+      "isOldVoucherS": false,
+      "nagent": 0
+    },
+    {
+      "sdocId": "2SH000603A|2025-01|4|13",
+      "idocLineId": 1,
+      "sacccode": "2241-3-1",
+      "bcdtDbt": "0",
+      "ndebit": 2530.34,
+      "ncredit": 0,
+      "sexcerpta": "付枣庄市1月份单位失业保险费用",
+      "soppAcccode": "1002",
+      "id": "f8f643fd52ec4d7b8a4086c8f0ba1f85",
+      "createTime": "2025-04-30 00:34:48",
+      "updateTime": "2025-04-30 00:34:48",
+      "nexchange": 0,
+      "isOldVoucherS": false,
+      "nagent": 0
+    }
+  ],
+  "timestamp": 1745944488336
+}
+
+// 获取凭证辅助明细
+{
+  "success": true,
+  "message": "",
+  "code": 200,
+  "result": [
+    {
+      "sdocId": "2SH000603A|2025-01|4|13",
+      "idocLineId": 0,
+      "bcdtDbt": "1",
+      "ndebit": 0,
+      "ncredit": 42604.68,
+      "scurrencyCode": "CNY",
+      "sexcerpta": "付枣庄市1月份医疗、生育、工伤、失业保险费用",
+      "id": "a24282362b2647d3bf0367c1dc97cde7",
+      "scurrency": "人民币",
+      "createTime": "2025-04-30 00:38:48",
+      "updateTime": "2025-04-30 00:38:48",
+      "nexchange": 0,
+      "isOldVoucherS": false,
+      "nagent": 0,
+      "dimList": [
+        {
+          "sdimensionCode": "GA17",
+          "sdimensionName": "银行账号",
+          "spropValue": "32050171813609001051",
+          "spropName": "中国铁路上海局集团有限公司徐州车务段",
+          "voucersId": "a24282362b2647d3bf0367c1dc97cde7"
+        },
+        {
+          "sdimensionCode": "CU",
+          "sdimensionName": "币种",
+          "spropValue": "CNY",
+          "spropName": "人民币"
+        }
+      ]
+    }
+  ],
+  "timestamp": 1745944729031
+}
+
+// 获取科目余额
+{
+  "success": true,
+  "message": "",
+  "code": 200,
+  "result": [
+    {
+      "sacccode": "1001",
+      "saccname": "库存现金",
+      "saccind": "0",
+      "nopen": 0
+    }
+  ],
+  "timestamp": 1745942559999
+}
+
+// 获取辅助余额
+{
+  "success": true,
+  "message": "",
+  "code": 200,
+  "result": [
+    {
+      "sacccode": "1002-1-1",
+      "money": 3873529.2,
+      "saccind": "0",
+      "srelationId": "e0b25f93c6dd5c0963303070bcd81efa",
+      "dimList": [
+        {
+          "srelationId": "e0b25f93c6dd5c0963303070bcd81efa",
+          "sdimensionCode": "CU",
+          "spropValue": "CNY",
+          "spropName": "人民币",
+          "sdimensionName": "币种"
+        },
+        {
+          "srelationId": "e0b25f93c6dd5c0963303070bcd81efa",
+          "sdimensionCode": "GA17",
+          "spropValue": "32050171813609001051",
+          "spropName": "中国铁路上海局集团有限公司徐州车务段",
+          "sdimensionName": "银行账号"
+        }
+      ]
+    },
+    {
+      "sacccode": "1122-1",
+      "money": -38131.2,
+      "saccind": "0",
+      "srelationId": "10ba604f84e7b0708104d08d95609668",
+      "dimList": [
+        {
+          "srelationId": "10ba604f84e7b0708104d08d95609668",
+          "sdimensionCode": "CU",
+          "spropValue": "CNY",
+          "spropName": "人民币",
+          "sdimensionName": "币种"
+        },
+        {
+          "srelationId": "10ba604f84e7b0708104d08d95609668",
+          "sdimensionCode": "GA100",
+          "spropValue": "2SH000603A-0067",
+          "spropName": "经营开发部",
+          "sdimensionName": "部门车间"
+        },
+        {
+          "srelationId": "10ba604f84e7b0708104d08d95609668",
+          "sdimensionCode": "GA102",
+          "spropValue": "369",
+          "spropName": "应收长期出借土地使用费",
+          "sdimensionName": "应收项目明细"
+        },
+        {
+          "srelationId": "10ba604f84e7b0708104d08d95609668",
+          "sdimensionCode": "GA155",
+          "spropValue": "2SH000603A-0002",
+          "spropName": "其他业务服务项目",
+          "sdimensionName": "产品服务项目"
+        },
+        {
+          "srelationId": "10ba604f84e7b0708104d08d95609668",
+          "sdimensionCode": "GA25",
+          "spropValue": "3.14",
+          "spropName": "路外-应收专用线代维修费",
+          "sdimensionName": "应收项目"
+        },
+        {
+          "srelationId": "10ba604f84e7b0708104d08d95609668",
+          "sdimensionCode": "PC",
+          "spropValue": "91320300733756075J",
+          "spropName": "江苏徐州港务集团邳州港有限公司",
+          "sdimensionName": "客商"
+        }
+      ]
+    }
+  ],
+  "timestamp": 1745944691593
+}
