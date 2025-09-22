@@ -23,6 +23,7 @@ class TaskManager:
         self.period_data_types = [
             'voucher_list',  # 凭证目录
             'voucher_detail',  # 凭证明细
+            'voucher_dim_detail',  # 凭证辅助明细
             'balance',  # 科目余额
             'aux_balance'  # 辅助余额
         ]

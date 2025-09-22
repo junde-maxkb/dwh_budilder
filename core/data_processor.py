@@ -148,8 +148,8 @@ class DataProcessor:
             original_count = len(raw_data)
             self.logger.info(f"从API获取到 {original_count} 条原始数据")
 
-            # 2. 存储原始数据到数据库
-            self._save_raw_data(raw_data, data_type, company_code)
+            # 2. 存储原始数据到数据库 (加入 year / period_code 元数据)
+            self._save_raw_data(raw_data, data_type, company_code, year=year, period_code=period_code)
             self.logger.info(f"原始数据已保存到数据库")
 
             # 3. 清洗数据
@@ -157,8 +157,9 @@ class DataProcessor:
             cleaned_count = len(cleaned_data) if cleaned_data is not None else 0
             self.logger.info(f"数据清洗完成，得到 {cleaned_count} 条清洗后数据")
 
-            # 4. 存储清洗后的数据
-            saved_count = self._save_cleaned_data(cleaned_data, data_type, company_code)
+            # 4. 存储清洗后的数据 (加入 year / period_code 元数据)
+            saved_count = self._save_cleaned_data(cleaned_data, data_type, company_code, year=year,
+                                                  period_code=period_code)
             self.logger.info(f"清洗后数据已保存到数据库，实际保存 {saved_count} 条")
 
             processing_time = (datetime.now() - start_time).total_seconds()
@@ -218,35 +219,42 @@ class DataProcessor:
         cleaning_method = self.cleaning_methods[data_type]
         return cleaning_method(raw_data)
 
-    def _save_raw_data(self, data: List[Dict[str, Any]], data_type: str, company_code: str):
-        """保存原始数据到数据库"""
+    def _save_raw_data(self, data: List[Dict[str, Any]], data_type: str, company_code: str, year: str = None,
+                       period_code: str = None):
+        """保存原始数据到数据库，并附加判重所需元数据(year / period_code)"""
         table_name = f"raw_{data_type}"
 
-        # 为每条数据添加元数据
         for record in data:
             record['company_code'] = company_code
+            if year:
+                record['year'] = year
+            if period_code:
+                record['period_code'] = period_code
             record['created_at'] = datetime.now().isoformat()
             record['data_source'] = 'api'
             record['processing_status'] = 'raw'
 
         self._save_to_database(data, table_name)
 
-    def _save_cleaned_data(self, data, data_type: str, company_code: str) -> int:
-        """保存清洗后的数据存入数据库"""
+    def _save_cleaned_data(self, data, data_type: str, company_code: str, year: str = None,
+                           period_code: str = None) -> int:
+        """保存清洗后的数据存入数据库，并附加 year / period_code"""
         if data is None or (hasattr(data, 'empty') and data.empty):
             return 0
 
         table_name = f"cleaned_{data_type}"
 
-        # 如果是DataFrame，转换为字典列表
         if hasattr(data, 'to_dict'):
             data_list = data.to_dict('records')
         else:
             data_list = data
 
-        # 为每条数据添加元数据
         for record in data_list:
             record['company_code'] = company_code
+            if year:
+                record['year'] = year
+            if period_code:
+                record['period_code'] = period_code
             record['processing_status'] = 'cleaned'
 
         self._save_to_database(data_list, table_name)
