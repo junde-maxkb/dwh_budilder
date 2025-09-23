@@ -459,6 +459,14 @@ class DataCleaner:
 
         return df
 
+    def clean_single_report_value(self, value: Any) -> Any:
+        """公开接口：清洗报表单元格值。包装内部 _clean_report_value。"""
+        return self._clean_report_value(value)
+
+    def classify_report_value(self, value: Any) -> str:
+        """公开接口：分类报表单元格值类型。包装内部 _classify_value_type。"""
+        return self._classify_value_type(value)
+
     def _clean_report_value(self, value) -> Any:
         """
         清洗报表中的单个值

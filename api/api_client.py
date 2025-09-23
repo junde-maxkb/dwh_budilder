@@ -342,19 +342,19 @@ class AutoFinancialReportAPI:
         }
 
         try:
-            logger.info(f"获取报表列表，公司: {company_code}, 月份: {period_detail_id}, 任务: {task_id}")
+            # logger.info(f"获取报表列表，公司: {company_code}, 月份: {period_detail_id}, 任务: {task_id}")
             resp = self.session.get(url, headers=headers, params=params, verify=False)
             resp.raise_for_status()
             result = resp.json()
             if isinstance(result, list):
-                logger.info(f"成功获取 {len(result)} 个报表")
+                # logger.info(f"成功获取 {len(result)} 个报表")
                 return result
             elif isinstance(result, dict) and "result" in result:
                 reports = result["result"]
-                logger.info(f"成功获取 {len(reports)} 个报表")
+                # logger.info(f"成功获取 {len(reports)} 个报表")
                 return reports
             else:
-                logger.info(f"成功获取报表数据")
+                # logger.info(f"成功获取报表数据")
                 return result if isinstance(result, list) else [result]
         except Exception as e:
             logger.error(f"获取报表列表失败: {e}")

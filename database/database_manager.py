@@ -13,6 +13,12 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+# 需要强制以字符串类型创建的列（不根据数据样本推断为数字）
+ALWAYS_STRING_COLUMNS = {
+    'PARENT_ID', 'COMPANY_ID', 'COMPANY_CODE', 'PERIOD_DETAIL_ID',
+    'TASKID', 'TASK_NAME', 'TASKNAME'
+}
+
 
 class DataBaseManager:
     # 类级别的锁，用于防止并发创建表
@@ -457,6 +463,39 @@ class DataBaseManager:
             if conn:
                 conn.close()
 
+    def _ensure_string_columns(self, conn, table_name: str, df: pd.DataFrame):
+        """确保已存在表中的指定列为 VARCHAR2，如果当前为 NUMBER 则尝试在线修改。
+        仅对 ALWAYS_STRING_COLUMNS 中的列执行，失败时记录警告不影响主流程。
+        """
+        try:
+            structure = self._get_table_structure(table_name, conn)
+            if not structure:
+                return
+            # 映射列结构
+            col_type_map = {col['column_name'].upper(): col for col in structure}
+            cursor = conn.cursor()
+            altered = False
+            for original_col in df.columns:
+                cleaned = self._clean_column_name(str(original_col))
+                if cleaned in ALWAYS_STRING_COLUMNS and cleaned in col_type_map:
+                    data_type = col_type_map[cleaned]['data_type'].upper()
+                    if data_type.startswith('NUMBER'):
+                        # 执行修改
+                        try:
+                            logger.info(f"修改列 {cleaned} 类型为 VARCHAR2(255) 以兼容字符串数据 (表 {table_name})")
+                            cursor.execute(f'ALTER TABLE "{table_name}" MODIFY ("{cleaned}" VARCHAR2(255))')
+                            altered = True
+                        except Exception as e:
+                            logger.warning(f"修改列 {cleaned} 类型失败: {e}")
+            if altered:
+                try:
+                    conn.commit()
+                except Exception:
+                    pass
+            cursor.close()
+        except Exception as e:
+            logger.warning(f"执行列类型保障时发生错误: {e}")
+
     def auto_create_and_save_data(self, data: List[Dict[str, Any]], table_name: str, if_exists: str = 'append') -> bool:
         """
         自动根据数据结构建表并写入数据，避免重复建表，确保数据写入成功
@@ -465,28 +504,21 @@ class DataBaseManager:
         if not data:
             logger.warning(f"数据列表为空，跳过表 {table_name} 的创建和保存")
             return True
-
         df = pd.DataFrame(data)
         if df.empty:
             logger.warning(f"DataFrame为空，跳过保存到表 {table_name}")
             return True
-
-        # 获取表级锁
+        df = self._enforce_string_columns(df)
         table_lock = self._get_table_lock(table_name)
-
         with table_lock:
             conn = self.connect()
             if not conn:
                 return False
-
             try:
-                # 在锁内检查表是否存在
                 table_exists = self.table_exists(table_name)
                 if not table_exists:
                     logger.info(f"表 {table_name} 不存在，自动创建...")
                     df_optimized = self._optimize_dataframe_dtypes(df)
-
-                    # 尝试创建表，使用重试机制
                     max_retries = 3
                     for attempt in range(max_retries):
                         try:
@@ -499,11 +531,11 @@ class DataBaseManager:
                                 return False
                             else:
                                 logger.warning(f"创建表 {table_name} 失败，第 {attempt + 1} 次重试: {e}")
-                                time.sleep(0.1 * (attempt + 1))  # 递增延迟
-
-                # 数据写入，支持append/replace/fail
+                                time.sleep(0.1 * (attempt + 1))
+                else:
+                    # 表已存在，尝试保障列类型
+                    self._ensure_string_columns(conn, table_name, df)
                 return self._safe_save_dataframe_to_table(df, table_name, if_exists, conn)
-
             except Exception as e:
                 logger.error(f"自动创建表并保存数据时发生错误: {e}")
                 return False
@@ -515,6 +547,10 @@ class DataBaseManager:
         df_optimized = df.copy()
 
         for column in df_optimized.columns:
+            cleaned = self._clean_column_name(str(column))
+            if cleaned in ALWAYS_STRING_COLUMNS:
+                # 跳过这些强制为字符串的列
+                continue
             # 处理字符串类型
             if df_optimized[column].dtype == 'object':
                 # 尝试转换为数据类型
@@ -523,7 +559,6 @@ class DataBaseManager:
                 # 尝试转换为日期类型
                 elif self._is_datetime_column(df_optimized[column]):
                     df_optimized[column] = pd.to_datetime(df_optimized[column], errors='ignore')
-
             # 处理整数类型优化
             elif df_optimized[column].dtype in ['int64', 'int32']:
                 min_val = df_optimized[column].min()
@@ -915,3 +950,63 @@ class DataBaseManager:
             core = text[:best]
             result = core + ('...' if reserve == 3 and best < len(text) else '')
         return result
+
+    def _enforce_string_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """将指定的列强制转换为字符串(object)类型，避免被推断为数字类型导致后续插入混合数据时报错。
+        保留 None，不强制填充。"""
+        if df is None or df.empty:
+            return df
+        df = df.copy()
+        for col in df.columns:
+            cleaned = self._clean_column_name(str(col))
+            if cleaned in ALWAYS_STRING_COLUMNS:
+                try:
+                    # 统一为 object，并保持 None
+                    def _to_str(v):
+                        try:
+                            if v is None:
+                                return None
+                            if isinstance(v, str):
+                                return v
+                            # pandas 的 isna 对某些类型可能抛异常，做保护
+                            try:
+                                if pd.isna(v):
+                                    return None
+                            except Exception:
+                                pass
+                            return str(v)
+                        except Exception:
+                            return None
+                    df[col] = df[col].astype(object).map(_to_str)
+                except Exception as e:
+                    logger.warning(f"强制列 {col} 为字符串失败: {e}")
+        return df
+
+    def get_existing_values(self, table_name: str, key_column: str) -> set:
+        """获取已存在表中指定列的去重值集合，用于上层去重。
+        如果表或列不存在，返回空集合。"""
+        try:
+            if not self.table_exists(table_name):
+                return set()
+            conn = self.connect()
+            if not conn:
+                return set()
+            cleaned_col = self._clean_column_name(key_column)
+            cursor = conn.cursor()
+            try:
+                cursor.execute(
+                    f'SELECT DISTINCT "{cleaned_col}" FROM "{table_name}" WHERE "{cleaned_col}" IS NOT NULL')
+                values = {str(row[0]) for row in cursor.fetchall() if row[0] is not None}
+                return values
+            except Exception as e:
+                logger.warning(f"查询表 {table_name} 列 {key_column} 去重值失败: {e}")
+                return set()
+            finally:
+                try:
+                    cursor.close()
+                    conn.close()
+                except Exception:
+                    pass
+        except Exception as e:
+            logger.warning(f"获取已存在值失败: {e}")
+            return set()

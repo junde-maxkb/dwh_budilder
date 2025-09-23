@@ -40,7 +40,8 @@ class DataProcessor:
     """
 
     def __init__(self, api_config: Dict[str, str], db_manager: DataBaseManager = None,
-                 auto_report_config: Dict[str, str] = None):
+                 auto_report_config: Dict[str, str] = None,
+                 financial_report_storage_mode: str = 'json'):
         """
         初始化数据处理器
 
@@ -48,6 +49,7 @@ class DataProcessor:
             api_config: API配置，包含base_url, app_key, app_secret
             db_manager: 数据库管理器实例，如果为None则创建新实例
             auto_report_config: 自动财务报表API配置，包含username, password
+            financial_report_storage_mode: 财务报表存储模式，'legacy' 或 'json'
         """
         self.logger = logging.getLogger(__name__)
 
@@ -72,6 +74,9 @@ class DataProcessor:
 
         self.db_manager = db_manager or DataBaseManager()
         self.data_cleaner = DataCleaner()
+        self.financial_report_storage_mode = financial_report_storage_mode.lower().strip()
+        if self.financial_report_storage_mode not in ('legacy', 'json'):
+            self.financial_report_storage_mode = 'json'
 
         # 数据类型与API方法的映射
         self.api_methods = {
@@ -420,10 +425,19 @@ class DataProcessor:
 
                 elif data_type == "report_data":
                     # 处理单个单位的报表数据
-                    unit_saved = self._process_single_unit_report_data(data)
-                    report_data_saved += unit_saved
-                    self.logger.info(
-                        f"单位 {data.get('company_id')} - {data.get('period_name')} 报表数据保存完成，共 {unit_saved} 条记录")
+                    if self.financial_report_storage_mode == 'json':
+                        raw_records, cleaned_records = self._process_financial_report_unit_json(data)
+                        if raw_records:
+                            self._save_to_database(raw_records, 'raw_financial_reports_json')
+                            report_data_saved += len(raw_records)
+                        if cleaned_records:
+                            self._save_to_database(cleaned_records, 'cleaned_financial_reports_json')
+                            report_data_saved += len(cleaned_records)
+                    else:
+                        unit_saved = self._process_single_unit_report_data(data)
+                        report_data_saved += unit_saved
+                        self.logger.info(
+                            f"单位 {data.get('company_id')} - {data.get('period_name')} 报表数据保存完成，共 {unit_saved} 条记录")
 
             except Exception as e:
                 error_count += 1
@@ -516,10 +530,14 @@ class DataProcessor:
                 task_info[0]['created_at'] = datetime.now().isoformat()
                 task_info[0]['data_source'] = 'financial_report_api'
                 task_info[0]['processing_status'] = 'raw'
-
-                self._save_to_database(task_info, 'financial_report_tasks')
-                total_saved += len(task_info)
-                self.logger.info(f"任务信息元数据处理: {len(task_info)} 条")
+                task_info = self._dedup_records('financial_report_tasks', task_info,
+                                                ['taskId', 'taskID', 'taskName', 'task_name'])
+                if task_info:
+                    self._save_to_database(task_info, 'financial_report_tasks')
+                    total_saved += len(task_info)
+                    self.logger.info(f"任务信息元数据处理: {len(task_info)} 条 (去重后)")
+                else:
+                    self.logger.info("任务信息已存在，跳过插入")
 
             # 2. 保存月份信息元数据
             periods = data.get('periods', [])
@@ -528,10 +546,14 @@ class DataProcessor:
                     period['created_at'] = datetime.now().isoformat()
                     period['data_source'] = 'financial_report_api'
                     period['processing_status'] = 'raw'
-
-                self._save_to_database(periods, 'financial_report_periods')
-                total_saved += len(periods)
-                self.logger.info(f"月份信息元数据处理: {len(periods)} 条")
+                # 依据 period 可能的字段: id / period_detail_id
+                periods = self._dedup_records('financial_report_periods', periods, ['id', 'period_detail_id'])
+                if periods:
+                    self._save_to_database(periods, 'financial_report_periods')
+                    total_saved += len(periods)
+                    self.logger.info(f"月份信息元数据处理: {len(periods)} 条 (去重后)")
+                else:
+                    self.logger.info("月份信息全部已存在，跳过插入")
 
             # 3. 保存单位信息元数据
             companies = self._flatten_company_tree(data.get('companies', []))
@@ -540,10 +562,14 @@ class DataProcessor:
                     company['created_at'] = datetime.now().isoformat()
                     company['data_source'] = 'financial_report_api'
                     company['processing_status'] = 'raw'
-
-                self._save_to_database(companies, 'financial_report_companies')
-                total_saved += len(companies)
-                self.logger.info(f"单位信息元数据处理: {len(companies)} 条")
+                companies = self._dedup_records('financial_report_companies', companies,
+                                                ['id', 'company_id', 'companyId'])
+                if companies:
+                    self._save_to_database(companies, 'financial_report_companies')
+                    total_saved += len(companies)
+                    self.logger.info(f"单位信息元数据处理: {len(companies)} 条 (去重后)")
+                else:
+                    self.logger.info("单位信息全部已存在，跳过插入")
 
             return total_saved
 
@@ -551,86 +577,90 @@ class DataProcessor:
             self.logger.error(f"处理基础元数据时发生错误: {e}")
             raise
 
-    def _process_single_unit_report_data(self, unit_data: Dict[str, Any]) -> int:
-        """
-        处理单个单位的报表数据
-
-        Args:
-            unit_data: 单个单位的报表数据
-
-        Returns:
-            int: 保存的记录总数
-        """
-        total_saved = 0
-
+    def _dedup_records(self, table_name: str, records: List[Dict[str, Any]], key_candidates: List[str]) -> (
+            List)[Dict[str, Any]]:
+        if not records:
+            return records
+        # 选择合适的key
+        selected_key = None
+        total = len(records)
+        for key in key_candidates:
+            presence = sum(1 for r in records if key in r and r.get(key) not in (None, ''))
+            if presence / total >= 0.6:  # 至少60%记录包含
+                selected_key = key
+                break
+        if not selected_key:
+            return records
         try:
-            # 构造报表数据列表格式，与原有处理逻辑兼容
-            reports_data = [unit_data]
+            existing_values = self.db_manager.get_existing_values(table_name, selected_key)
+        except Exception as e:
+            self.logger.error(f"从表 {table_name} 获取已存在的主键值时发生错误: {e}")
+            existing_values = set()
+        new_seen = set()
+        filtered = []
+        for r in records:
+            val = r.get(selected_key)
+            if val is None or val == '':
+                # 保留无主键值的记录（或可选择跳过）
+                filtered.append(r)
+                continue
+            sval = str(val)
+            if sval in existing_values or sval in new_seen:
+                continue
+            new_seen.add(sval)
+            filtered.append(r)
+        dropped = len(records) - len(filtered)
+        if dropped > 0:
+            self.logger.info(f"去重: 表 {table_name} 依据字段 {selected_key} 删除 {dropped} 条重复记录")
+        return filtered
 
-            # 保存原始报表数据
+    # 恢复缺失的方法
+    def _process_single_unit_report_data(self, unit_data: Dict[str, Any]) -> int:
+        """处理单个单位的报表数据 (非 JSON 模式)。返回保存的记录数。"""
+        try:
+            reports_data = [unit_data]
             raw_report_records = self._process_raw_reports_data(reports_data)
+            total_saved = 0
             if raw_report_records:
                 self._save_to_database(raw_report_records, 'raw_financial_reports')
                 total_saved += len(raw_report_records)
-
-            # 清洗报表数据
             cleaned_report_data = self._clean_financial_reports_data(raw_report_records)
             if cleaned_report_data:
                 self._save_to_database(cleaned_report_data, 'cleaned_financial_reports')
                 total_saved += len(cleaned_report_data)
-
             return total_saved
-
         except Exception as e:
             self.logger.error(f"处理单个单位报表数据时发生错误: {e}")
             raise
 
     def _process_raw_reports_data(self, reports_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        将原始报表数据转换为标准化记录格式
-
-        Args:
-            reports_data: 原始报表数据列表
-
-        Returns:
-            List[Dict[str, Any]]: 标准化的记录列表
-        """
+        """将原始报表数据转换为标准化记录格式。"""
         formatted_data = []
-
         try:
             for report_item in reports_data:
-                # 获取报表的基本信息
                 period_name = report_item.get('period_name', '未知月份')
                 period_detail_id = report_item.get('period_detail_id', '')
                 company_id = report_item.get('company_id', '')
                 parent_id = report_item.get('parent_id', '')
                 reports = report_item.get('reports', [])
                 report_data = report_item.get('report_data', [])
-
-                # 处理报表数据
                 if report_data and isinstance(report_data, list):
                     for row_index, row in enumerate(report_data):
                         if isinstance(row, list):
-                            # 将行数据转换为字典格式
                             record = {
                                 'period_name': period_name,
                                 'period_detail_id': period_detail_id,
                                 'company_id': company_id,
                                 'parent_id': parent_id,
                                 'row_index': row_index,
-                                'raw_data': str(row),  # 将行数据转换为字符串存储
+                                'raw_data': str(row),
                                 'data_source': 'financial_report_api',
                                 'processing_status': 'raw',
                                 'created_at': datetime.now().isoformat()
                             }
-
-                            # 如果行数据有具体地��值，添加列信息
                             for col_index, value in enumerate(row):
                                 record[f'col_{col_index}'] = value
-
                             formatted_data.append(record)
-
-                # 添加报表信息记录
                 for report in reports:
                     report_record = {
                         'period_name': period_name,
@@ -645,69 +675,45 @@ class DataProcessor:
                         'created_at': datetime.now().isoformat()
                     }
                     formatted_data.append(report_record)
-
             self.logger.info(f"原始报表数据处理完成，共生成 {len(formatted_data)} 条记录")
             return formatted_data
-
         except Exception as e:
             self.logger.error(f"处理原始报表数据时发生错误: {e}")
             raise
 
     def _clean_financial_reports_data(self, raw_report_records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        清洗财务报表数据
-
-        Args:
-            raw_report_records: 原始报表记录列表
-
-        Returns:
-            List[Dict[str, Any]]: 清洗后的记录列表
-        """
+        """清洗财务报表数据。"""
         cleaned_data = []
-
         try:
             for record in raw_report_records:
                 cleaned_record = record.copy()
-
-                # 更新处理状态
                 cleaned_record['processing_status'] = 'cleaned'
                 cleaned_record['cleaned_at'] = datetime.now().isoformat()
-
-                # 数据清洗逻辑
-                # 1. 清理字符串字段的空格
                 for key, value in cleaned_record.items():
                     if isinstance(value, str):
                         cleaned_record[key] = value.strip()
-
-                # 2. 处理数值字段
-                for col_key in cleaned_record.keys():
+                for col_key in list(cleaned_record.keys()):
                     if col_key.startswith('col_'):
                         value = cleaned_record[col_key]
                         if isinstance(value, str):
-                            # 尝试转换为数值
-                            if value.replace('.', '').replace('-', '').replace(',', '').isdigit():
+                            core = value.replace(',', '').replace(' ', '')
+                            if core.replace('.', '', 1).replace('-', '', 1).isdigit():
                                 try:
-                                    cleaned_record[col_key] = float(value.replace(',', ''))
+                                    cleaned_record[col_key] = float(core)
                                 except ValueError:
-                                    pass  # 保持原值
-
-                # 3. 标准化公司ID和父ID
+                                    pass
                 if 'company_id' in cleaned_record:
                     cleaned_record['company_id'] = str(cleaned_record['company_id']).strip()
                 if 'parent_id' in cleaned_record:
                     cleaned_record['parent_id'] = str(cleaned_record['parent_id']).strip()
-
-                # 4. 验证必要字段
                 required_fields = ['company_id', 'period_detail_id']
-                if all(cleaned_record.get(field) for field in required_fields):
+                if all(cleaned_record.get(f) for f in required_fields):
                     cleaned_data.append(cleaned_record)
                 else:
                     self.logger.warning(f"记录缺少必要字段，跳过: {cleaned_record}")
-
             self.logger.info(
-                f"财务报表数据清洗完成，从 {len(raw_report_records)} 条原始记录清洗出 {len(cleaned_data)} 条有效记录")
+                f"财务报表数据清洗完成，从 {len(raw_report_records)} 条原始记录清洗出 {len(cleaned_data)} 条")
             return cleaned_data
-
         except Exception as e:
             self.logger.error(f"清洗财务报表数据时发生错误: {e}")
             raise
@@ -785,3 +791,84 @@ class DataProcessor:
         except Exception as e:
             self.logger.error(f"添加财务报表处理任务到系统管理器时发生错误: {str(e)}")
             return False
+
+    def _process_financial_report_unit_json(self, unit_data: Dict[str, Any]) -> (
+            List[Dict[str, Any]], List[Dict[str, Any]]):
+        """将单个单位的报表数据以 JSON 形式存储。
+        返回 (raw_records, cleaned_records) 列表，每个列表通常只有一条记录。"""
+        try:
+            period_name = unit_data.get('period_name', '')
+            period_detail_id = unit_data.get('period_detail_id', '')
+            company_id = unit_data.get('company_id', '')
+            parent_id = unit_data.get('parent_id', '')
+            reports = unit_data.get('reports', []) or []
+            report_data_matrix = unit_data.get('report_data', []) or []
+
+            # 统计原始矩阵行/列
+            row_count = len(report_data_matrix)
+            col_count = max((len(r) for r in report_data_matrix), default=0)
+
+            raw_record = {
+                'company_id': company_id,
+                'parent_id': parent_id,
+                'period_name': period_name,
+                'period_detail_id': period_detail_id,
+                'reports': reports,  # list -> JSON 序列化由 DB 层处理
+                'report_data': report_data_matrix,  # list[list]
+                'row_count': row_count,
+                'col_count': col_count,
+                'data_source': 'financial_report_api',
+                'processing_status': 'raw',
+                'created_at': datetime.now().isoformat()
+            }
+
+            # 清洗：使用 DataCleaner 的内部方法清理矩阵值
+            cleaner = self.data_cleaner
+            cleaned_matrix = []
+            numeric = text = empty = nulls = 0
+            cleaned_cells_types = []  # 可选：调试用
+            for r_idx, row in enumerate(report_data_matrix):
+                new_row = []
+                if not isinstance(row, list):
+                    continue
+                for c_idx, value in enumerate(row):
+                    cleaned_value = cleaner.clean_single_report_value(value)
+                    vtype = cleaner.classify_report_value(value)
+                    if vtype == 'numeric':
+                        numeric += 1
+                    elif vtype == 'text':
+                        text += 1
+                    elif vtype == 'empty':
+                        empty += 1
+                    elif vtype == 'null':
+                        nulls += 1
+                    new_row.append(cleaned_value)
+                    cleaned_cells_types.append(vtype)
+                cleaned_matrix.append(new_row)
+
+            cleaned_record = {
+                'company_id': company_id,
+                'parent_id': parent_id,
+                'period_name': period_name,
+                'period_detail_id': period_detail_id,
+                'reports': reports,
+                'report_data': report_data_matrix,  # 原始数据保留
+                'cleaned_report_data': cleaned_matrix,
+                'summary': {
+                    'row_count': row_count,
+                    'col_count': col_count,
+                    'numeric_values': numeric,
+                    'text_values': text,
+                    'empty_values': empty,
+                    'null_values': nulls,
+                    'total_cells': numeric + text + empty + nulls
+                },
+                'data_source': 'financial_report_api',
+                'processing_status': 'cleaned',
+                'created_at': datetime.now().isoformat(),
+                'cleaned_at': datetime.now().isoformat()
+            }
+            return [raw_record], [cleaned_record]
+        except Exception as e:
+            self.logger.error(f"JSON 方式处理单元报表数据失败: {e}")
+            return [], []
