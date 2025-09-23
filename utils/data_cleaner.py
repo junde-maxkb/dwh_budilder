@@ -29,6 +29,68 @@ class DataCleaner:
     def __init__(self):
         self.cleaning_stats = {}
 
+    def _ensure_column(self, df: pd.DataFrame, target: str, alternatives: List[str] = None, default: Any = ''):
+        """确保 DataFrame 中存在指定列，并合并所有候选列数据到目标列。
+
+        步骤：
+        1. 若目标列不存在，创建或用第一个找到的候选列重命名。
+        2. 遍历所有候选列，将其非空值填充到目标列的空/空字符串/NaN 位置。
+        3. 合并后删除候选列（保留目标列）。
+        """
+        alts = alternatives or []
+        lower_map = {c.lower(): c for c in df.columns}
+
+        # 确保目标列存在
+        if target not in df.columns:
+            renamed = False
+            for alt in alts:
+                # 精确匹配
+                if alt in df.columns:
+                    df.rename(columns={alt: target}, inplace=True)
+                    renamed = True
+                    break
+                # 大小写不一致匹配
+                if alt.lower() in lower_map:
+                    df.rename(columns={lower_map[alt.lower()]: target}, inplace=True)
+                    renamed = True
+                    break
+            if not renamed:
+                # 尝试直接匹配目标列大小写变体
+                if target.lower() in lower_map:
+                    df.rename(columns={lower_map[target.lower()]: target}, inplace=True)
+                else:
+                    df[target] = default
+
+        # 现在目标列已存在，开始合并剩余候选列
+        mask_missing = df[target].isna() | (df[target].astype(str).str.strip() == '')
+        for alt in alts:
+            # 找出真实存在的候选列（可能是大小写变体）
+            real_alt = None
+            if alt in df.columns and alt != target:
+                real_alt = alt
+            elif alt.lower() in lower_map and lower_map[alt.lower()] != target:
+                real_alt = lower_map[alt.lower()]
+            if real_alt and real_alt in df.columns:
+                try:
+                    # 仅填充当前仍为空的位置
+                    fill_mask = mask_missing & ~(df[real_alt].isna() | (df[real_alt].astype(str).str.strip() == ''))
+                    if fill_mask.any():
+                        df.loc[fill_mask, target] = df.loc[fill_mask, real_alt]
+                        # 更新剩余缺失掩码
+                        mask_missing = df[target].isna() | (df[target].astype(str).str.strip() == '')
+                except Exception as e:
+                    print(f"合并列 {real_alt} 到 {target} 时出错: {str(e)}")
+                # 删除已合并列
+                try:
+                    if real_alt in df.columns and real_alt != target:
+                        df.drop(columns=[real_alt], inplace=True)
+                except Exception as e:
+                    print(f"删除列 {real_alt} 时出错: {str(e)}")
+
+        # 最终保证不存在的值填默认
+        if default != '' and (df[target].isna()).any():
+            df[target] = df[target].fillna(default)
+
     def clean_account_structure(self, raw_data: List[Dict[str, Any]]) -> pd.DataFrame:
         """
         清洗会计科目结构数据
@@ -208,6 +270,16 @@ class DataCleaner:
         df = pd.DataFrame(raw_data)
         original_count = len(df)
 
+        for col, alts in [
+            ('sdocId', ['sDocId', 'SDOCID']),
+            ('sacccode', ['saccCode', 'SACCCODE', 'accCode']),
+            ('bcdtDbt', ['bcdt_dbt', 'BCDTDBT']),
+            ('sexcerpta', ['excerpta', 'SEXCERPTA']),
+            ('soppAcccode', ['soppacccode', 'SOPPACCCODE']),
+            ('screditCode', ['screditcode', 'SCREDITCODE'])
+        ]:
+            self._ensure_column(df, col, alts, default='')
+
         df['sdocId'] = df['sdocId'].fillna('').astype(str).str.strip()
         df['sacccode'] = df['sacccode'].fillna('').astype(str).str.strip()
         df['bcdtDbt'] = df['bcdtDbt'].fillna('').astype(str).str.strip()
@@ -215,13 +287,20 @@ class DataCleaner:
         df['soppAcccode'] = df['soppAcccode'].fillna('').astype(str).str.strip()
         df['screditCode'] = df['screditCode'].fillna('').astype(str).str.strip()
 
+        # 数值与时间字段容错
+        for num_col in ['idocLineId', 'ndebit', 'ncredit', 'nexchange']:
+            if num_col not in df.columns:
+                df[num_col] = 0
         df['idocLineId'] = pd.to_numeric(df['idocLineId'], errors='coerce').fillna(0).astype(int)
         df['ndebit'] = pd.to_numeric(df['ndebit'], errors='coerce').fillna(0)
         df['ncredit'] = pd.to_numeric(df['ncredit'], errors='coerce').fillna(0)
         df['nexchange'] = pd.to_numeric(df['nexchange'], errors='coerce').fillna(0)
 
-        df['createTime'] = pd.to_datetime(df['createTime'], errors='coerce')
-        df['updateTime'] = pd.to_datetime(df['updateTime'], errors='coerce')
+        for dt_col in ['createTime', 'updateTime']:
+            if dt_col not in df.columns:
+                df[dt_col] = pd.NaT
+            else:
+                df[dt_col] = pd.to_datetime(df[dt_col], errors='coerce')
 
         df['cleaned_at'] = datetime.now()
         df['data_source'] = 'api_voucher_detail'
@@ -234,6 +313,60 @@ class DataCleaner:
         }
 
         logger.info(f"凭证明细数据清洗完成: 原始{original_count}条, 清洗后{cleaned_count}条, 移除0条")
+        return df
+
+    def clean_voucher_dim_detail(self, raw_data: List[Dict[str, Any]]) -> pd.DataFrame:
+        """清洗凭证辅助维度明细数据，结构可能与凭证明细不同，需更高容错。"""
+        if not raw_data:
+            return pd.DataFrame()
+        df = pd.DataFrame(raw_data)
+        original_count = len(df)
+
+        # 确保关键列存在
+        self._ensure_column(df, 'sdocId', ['sDocId', 'SDOCID'], '')
+        # sacccode 可能不存在（维度明细可能只有维度编码），因此安全处理
+        self._ensure_column(df, 'sacccode', ['saccCode', 'SACCCODE', 'accCode'], '')
+        # 常见凭证维度字段（根据经验推测）
+        for col, alts in [
+            ('dimensionCode', ['dimCode', 'DIMENSIONCODE', 'dim_code']),
+            ('dimensionName', ['dimName', 'DIMENSIONNAME', 'dimension']),
+            ('dimensionValue', ['dimValue', 'DIMENSIONVALUE', 'dim_value']),
+            ('dimensionValueName', ['dimValueName', 'DIMENSIONVALUENAME', 'dim_value_name'])
+        ]:
+            self._ensure_column(df, col, alts, '')
+
+        # 基础清洗
+        text_cols = [c for c in
+                     ['sdocId', 'sacccode', 'dimensionCode', 'dimensionName', 'dimensionValue', 'dimensionValueName'] if
+                     c in df.columns]
+        for c in text_cols:
+            df[c] = df[c].fillna('').astype(str).str.strip()
+
+        # 如果存在金额或行号等字段，进行数值转换
+        for num_col in ['idocLineId', 'ndebit', 'ncredit', 'nexchange']:
+            if num_col in df.columns:
+                df[num_col] = pd.to_numeric(df[num_col], errors='coerce').fillna(0)
+        if 'idocLineId' in df.columns:
+            try:
+                df['idocLineId'] = df['idocLineId'].astype(int)
+            except Exception as e:
+                logger.error("将 idocLineId 转换为整数时出错，尝试填充缺失值后转换。错误信息: " + str(e))
+                df['idocLineId'] = df['idocLineId'].fillna(0).astype(int)
+
+        for dt_col in ['createTime', 'updateTime']:
+            if dt_col in df.columns:
+                df[dt_col] = pd.to_datetime(df[dt_col], errors='coerce')
+
+        df['cleaned_at'] = datetime.now()
+        df['data_source'] = 'api_voucher_dim_detail'
+
+        cleaned_count = len(df)
+        self.cleaning_stats['voucher_dim_detail'] = {
+            'original': original_count,
+            'cleaned': cleaned_count,
+            'removed': 0
+        }
+        logger.info(f"凭证辅助维度明细数据清洗完成: 原始{original_count}条, 清洗后{cleaned_count}条, 移除0条")
         return df
 
     def clean_balance_data(self, raw_data: List[Dict[str, Any]], data_type: str = 'balance') -> pd.DataFrame:

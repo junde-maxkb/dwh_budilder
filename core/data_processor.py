@@ -85,14 +85,14 @@ class DataProcessor:
             'aux_balance': self.api_client.get_aux_balance
         }
 
-        # 数据清洗方法映射
+        # 数据清洗方法映射 (voucher_dim_detail 使用独立的更高容错方法)
         self.cleaning_methods = {
             'account_structure': self.data_cleaner.clean_account_structure,
             'subject_dimension': self.data_cleaner.clean_subject_dimension,
             'customer_vendor': self.data_cleaner.clean_customer_vendor,
             'voucher_list': self.data_cleaner.clean_voucher_list,
             'voucher_detail': self.data_cleaner.clean_voucher_detail,
-            'voucher_dim_detail': self.data_cleaner.clean_voucher_detail,  # 使用相同的清洗方法
+            'voucher_dim_detail': self.data_cleaner.clean_voucher_dim_detail,
             'balance': lambda data: self.data_cleaner.clean_balance_data(data, 'balance'),
             'aux_balance': lambda data: self.data_cleaner.clean_balance_data(data, 'aux_balance')
         }
