@@ -1,5 +1,6 @@
+import json
 import logging
-
+import os
 from utils.generate_period_code import generate_period_codes
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,13 @@ class TaskManager:
             'aux_balance'  # 辅助余额
         ]
 
-        self.company_codes = ['2SH000603A']
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        print(current_dir)
+        company_ids_path = os.path.join(current_dir, '..', 'company_ids.json')
+        print(company_ids_path)
+        with open(company_ids_path, "r", encoding="utf-8") as f:
+            self.company_codes = json.load(f)
+        print(f"加载了 {len(self.company_codes)} 个公司代码用于任务管理")
 
     def check_and_add_new_data_tasks(self) -> bool:
         """

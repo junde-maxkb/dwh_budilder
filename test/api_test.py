@@ -666,6 +666,11 @@ class AutoFinancialReportAPI:
                 "reports_data": []
             }
 
+            company_id_List = [pair[0] for pair in company_pairs]
+            # 写入json文件
+            with open("company_ids.json", "w", encoding="utf-8") as f:
+                json.dump(company_id_List, f, ensure_ascii=False, indent=4)
+
             # 为每个月份和每个公司获取报表数据
             logger.info("开始获取报表数据...")
             for period in periods:

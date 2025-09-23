@@ -327,3 +327,39 @@ class TestDataCleaner:
         assert df.iloc[0]['screditCode'] == '91110000000000000X'
         assert df.iloc[0]['sbptype'] == '客户'
         assert df.iloc[0]['saccountCode'] == ''
+
+    def test_clean_voucher_dim_detail_missing_sacccode(self, cleaner):
+        """测试凭证辅助维度明细在缺少 sacccode 字段时的容错处理"""
+        raw_data = [
+            {
+                'sDocId': 'DOC1001',
+                'dimCode': 'KEHU',
+                'dimName': '客户',
+                'dimValue': 'C001',
+                'dimValueName': '客户A',
+                'idocLineId': '1'
+            },
+            {
+                'SDOCID': 'DOC1002',
+                'DIMENSIONCODE': 'XM',
+                'DIMENSIONNAME': '项目',
+                'DIMENSIONVALUE': 'P002',
+                'DIMENSIONVALUENAME': '项目B',
+                'idocLineId': 'invalid'
+            }
+        ]
+
+        df = cleaner.clean_voucher_dim_detail(raw_data)
+
+        assert isinstance(df, pd.DataFrame)
+        assert 'sacccode' in df.columns  # 自动补充
+        assert df.iloc[0]['sacccode'] == ''
+        assert df.iloc[0]['dimensionCode'] == 'KEHU'
+        assert df.iloc[1]['dimensionCode'] == 'XM'
+        assert df.iloc[0]['idocLineId'] == 1
+        assert df.iloc[1]['idocLineId'] == 0  # 转换失败置0
+        assert df.iloc[0]['data_source'] == 'api_voucher_dim_detail'
+        stats = cleaner.cleaning_stats['voucher_dim_detail']
+        assert stats['original'] == 2
+        assert stats['removed'] == 0
+
