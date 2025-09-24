@@ -342,7 +342,7 @@ class DataProcessor:
                 )
 
                 if success:
-                    self.logger.info(f"任务 {task_name} 已添加到队列")
+                    self.logger.debug(f"任务 {task_name} 已添加到队列")
                 else:
                     self.logger.error(f"添加任务 {task_name} 失败")
                     return False
