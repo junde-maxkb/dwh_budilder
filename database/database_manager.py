@@ -75,7 +75,10 @@ class DataBaseManager:
             logger.error(f"OceanBase 连接失败: {e}")
             return None
 
-    def _generate_column_definition(self, dtype, column_data=None) -> str:
+    def _generate_column_definition(self, dtype, column_data=None, column_name=None) -> str:
+        # 如果字段名为REPORTS，强制使用CLOB类型
+        if column_name and column_name.upper() == 'REPORTS':
+            return "CLOB"
         if pd.api.types.is_integer_dtype(dtype):
             return "NUMBER(19)"
         elif pd.api.types.is_float_dtype(dtype):
@@ -181,7 +184,7 @@ class DataBaseManager:
             if clean_unique == 'ID' and not has_id:
                 continue
             column_data = df[raw_name]
-            column_def = f'"{clean_unique}" {self._generate_column_definition(dtype, column_data)}'
+            column_def = f'"{clean_unique}" {self._generate_column_definition(dtype, column_data, raw_name)}'
             columns.append(column_def)
 
         columns_sql = ",\n  ".join(columns)

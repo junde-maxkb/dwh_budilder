@@ -31,6 +31,15 @@ class FinanceAPIClient:
             'User-Agent': UserAgent().random
         })
 
+    def _normalize_api_response(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "success": raw_data.get("success", raw_data.get("code") == 200),
+            "message": raw_data.get("message") or raw_data.get("info", ""),
+            "code": raw_data.get("code", -1),
+            "result": raw_data.get("result") if "result" in raw_data else raw_data.get("data"),
+            "timestamp": raw_data.get("timestamp")
+        }
+
     def _make_request(self, endpoint: str, params: Dict[str, Any]) -> APIResponse:
         url = f"{self.base_url}{endpoint}"
 
@@ -45,8 +54,11 @@ class FinanceAPIClient:
             response = self.session.post(url, json=request_data, timeout=30)
             response.raise_for_status()
 
-            data = response.json()
-            api_response = APIResponse(**data)
+            raw_data = response.json()
+
+            mapped_data = self._normalize_api_response(raw_data)
+
+            api_response = APIResponse(**mapped_data)
 
             if api_response.success:
                 logger.info(f"API调用成功: {endpoint}, 返回数据条数: {len(api_response.result or [])}")
