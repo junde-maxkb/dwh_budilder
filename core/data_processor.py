@@ -230,11 +230,12 @@ class DataProcessor:
         table_name = f"raw_{data_type}"
 
         for record in data:
-            record['company_code'] = company_code
+            record['company_code'] = company_code  # 确保存在
+            # 始终创建 period_code 列，即使该数据类型不需要期间（如科目结构、科目维度）
+            if 'period_code' not in record:
+                record['period_code'] = period_code if period_code else None
             if year:
                 record['year'] = year
-            if period_code:
-                record['period_code'] = period_code
             record['created_at'] = datetime.now().isoformat()
             record['data_source'] = 'api'
             record['processing_status'] = 'raw'
@@ -256,10 +257,10 @@ class DataProcessor:
 
         for record in data_list:
             record['company_code'] = company_code
+            if 'period_code' not in record:
+                record['period_code'] = period_code if period_code else None
             if year:
                 record['year'] = year
-            if period_code:
-                record['period_code'] = period_code
             record['processing_status'] = 'cleaned'
 
         self._save_to_database(data_list, table_name)
