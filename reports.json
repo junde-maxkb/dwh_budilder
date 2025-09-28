@@ -1,0 +1,32 @@
+[
+  {
+    "reportId": "1928247928732622849",
+    "reportCode": "月报03表",
+    "reportName": "铁路企业经营活动现金流量月报表",
+    "reportType": "1",
+    "uploadId": null,
+    "dataCompanyCode": "2SH0000001",
+    "handingStatus": 0,
+    "hasData": false,
+    "lock": false,
+    "init": "TLQYJYHDXJLLYBB",
+    "monetaryUnitId": "1",
+    "createCompanyCode": null,
+    "createCompanyName": null
+  },
+  {
+    "reportId": "1928247936049078273",
+    "reportCode": "月报04表",
+    "reportName": "财政部企业快报补充指标表",
+    "reportType": "1",
+    "uploadId": null,
+    "dataCompanyCode": "2SH0000001",
+    "handingStatus": 0,
+    "hasData": false,
+    "lock": false,
+    "init": "CZBQYKBBCZBB",
+    "monetaryUnitId": "3",
+    "createCompanyCode": null,
+    "createCompanyName": null
+  }
+]

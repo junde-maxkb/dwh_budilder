@@ -2,9 +2,6 @@ import logging
 import sys
 import os
 from datetime import datetime
-from logging.handlers import RotatingFileHandler
-
-from core.startup_manager import StartupManager
 
 
 def setup_logging() -> None:
@@ -31,10 +28,7 @@ def setup_logging() -> None:
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(formatter)
 
-    # 文件大小轮转处理器
-    file_handler = RotatingFileHandler(
-        log_file, maxBytes=50 * 1024 * 1024, backupCount=10, encoding='utf-8'
-    )
+    file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(formatter)
 
@@ -45,7 +39,7 @@ def setup_logging() -> None:
 def main():
     setup_logging()
 
-    # 创建并运行启动管理器
+    from core.startup_manager import StartupManager
     startup_manager = StartupManager()
     startup_manager.run()
 

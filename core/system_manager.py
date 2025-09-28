@@ -106,7 +106,7 @@ class SystemManager:
                 wrapper = PriorityTaskWrapper(task)
                 self.task_queue.put(wrapper)
 
-                self.logger.info(f"Task '{name}' added to queue with priority {priority}")
+                # self.logger.info(f"Task '{name}' added to queue with priority {priority}")
                 return True
         except Exception as e:
             self.logger.error(f"Failed to add task '{name}': {str(e)}")
