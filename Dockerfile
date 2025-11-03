@@ -149,7 +149,8 @@ RUN pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trus
     pytest>=8.4.1 \
     requests>=2.32.5 \
     selenium>=4.35.0 \
-    webdriver-manager>=4.0.2
+    webdriver-manager>=4.0.2 \
+    beautifulsoup4>=4.14.2
 
 # 在安装完成后清理编译工具以减小镜像大小
 RUN apt-get remove -y build-essential gcc g++ libc6-dev && \

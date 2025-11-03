@@ -1,0 +1,468 @@
+单据接口
+curl "http://10.3.102.173/sys/report/reportmanager/findReportWithQueryFieldByCode?reportCode=zfsboestatementvPage.ureport.xml" ^
+  -X "POST" ^
+  -H "Connection: keep-alive" ^
+  -H "Content-Length: 0" ^
+  -H "Accept: application/json, text/plain, */*" ^
+  -H "pageUri: ^#/reportDetail?reportCode=zfsboestatementvPage.ureport.xml" ^
+  -H "Accept-Language: zh-CN" ^
+  -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36" ^
+  -H "x-frame-options: allow-from http://10.3.92.33/finebi/decision/link/CCga" ^
+  -H "authkey: YcLmuAd1U6UCdT3SS0Oh9X7wYpEO8XXGGoty1/s9t8nk4W/+u1flkmDtpdgkY1Kq08qQjIiw8tYP+dbw4y95xYk32k0J4zIsnV9dPv3DFsfXlbt5iXneu1zEZNRpjSbAfdyz4UhDU8Y8nRBezNgtcTk1qJMoJB5MCFgt5taXdBg=" ^
+  -H "Origin: http://10.3.102.173" ^
+  -H "Referer: http://10.3.102.173/report/" ^
+  -H "Cookie: VUE_APP_VERSION=2.0.5; user_language=zh-CN; jobLevel=null; deptId=f8451745-5383-429e-92c5-247313304b3f; empId=bb12a8d3-467f-4a86-a5bd-6b240d365db7; boeUrl=; AlteonPcgsh=A33Cfa1mAwpCEV53ATNhGw^$^$; ZTESSCAUTH=eba90f61-f83e-4a00-96bd-41b376d33efc; userInfo=^%^7B^%^22cnName^%^22^%^3A^%^22^%^E5^%^85^%^B1^%^E4^%^BA^%^AB^%^E4^%^B8^%^AD^%^E5^%^BF^%^83-^%^E6^%^9D^%^8E^%^E7^%^91^%^BE^%^22^%^2C^%^22empId^%^22^%^3A^%^22bb12a8d3-467f-4a86-a5bd-6b240d365db7^%^22^%^2C^%^22roleTypeList^%^22^%^3A^%^5B^%^223^%^22^%^2C^%^224^%^22^%^2C^%^222^%^22^%^2C^%^222^%^22^%^2C^%^222^%^22^%^2C^%^222^%^22^%^5D^%^2C^%^22loginName^%^22^%^3A^%^2210030^%^22^%^2C^%^22deptName^%^22^%^3A^%^22^%^E7^%^B3^%^BB^%^E7^%^BB^%^9F^%^E8^%^BF^%^90^%^E7^%^BB^%^B4^%^E7^%^BB^%^84^%^22^%^2C^%^22groupId^%^22^%^3A^%^22accba517-5725-4fae-8938-48946676bfc1^%^22^%^2C^%^22groupName^%^22^%^3A^%^22^%^E4^%^B8^%^8A^%^E6^%^B5^%^B7^%^E9^%^93^%^81^%^E8^%^B7^%^AF^%^E5^%^B1^%^80^%^22^%^2C^%^22empType^%^22^%^3A^%^22normal^%^22^%^2C^%^22leName^%^22^%^3A^%^22^%^E5^%^BC^%^80^%^E5^%^8F^%^91^%^E6^%^B5^%^8B^%^E8^%^AF^%^95^%^E6^%^A0^%^B8^%^E7^%^AE^%^97^%^E4^%^B8^%^BB^%^E4^%^BD^%^93^%^22^%^2C^%^22mainPost^%^22^%^3A^%^2221f7f78e-f63a-4b7c-befd-7cb5aa602766^%^22^%^2C^%^22extendS1^%^22^%^3A^%^220^%^22^%^7D" ^
+  --compressed ^
+  --insecure
+
+
+
+{
+    "msg": "success",
+    "code": 0,
+    "queryFields": [
+        {
+            "id": "d32c3b1a-d55f-40a9-be27-b35a991ae7f6",
+            "fieldCode": "lastApprovalDate",
+            "fieldName": "审批完成时间",
+            "fieldType": "date",
+            "initMethodUrl": null,
+            "fieldTypeName": "日期选择框",
+            "dataSourceId": "26cc1a35-d61a-4094-be9b-286c0fb9deb8",
+            "dataSourceJson": "{\"code\":\"boeDate\",\"start\":\"startLastApprovalDate\",\"end\":\"endLastApprovalDate\",\"range\":true,\"type\":\"datetime\",\"picker\":\"datetime\"}",
+            "dataSourceName": null,
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": "1",
+            "sort": 0
+        },
+        {
+            "id": "fd539020-0538-4500-9a0a-81a76959e52e",
+            "fieldCode": "firstBoeDate",
+            "fieldName": "单据日期",
+            "fieldType": "date",
+            "initMethodUrl": null,
+            "fieldTypeName": "日期选择框",
+            "dataSourceId": "038070cc-e544-45e4-b99e-5f36b874a6c9",
+            "dataSourceJson": "{\"code\":\"firstBoeDate\",\"start\":\"startBoeDate\",\"end\":\"endBoeDate\",\"range\":true,\"type\":\"datetime\",\"picker\":\"datetime\"}",
+            "dataSourceName": null,
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": "1",
+            "sort": 0
+        },
+        {
+            "id": "a55b53e4-16be-7917-e053-0100007f352a",
+            "fieldCode": "employeeId",
+            "fieldName": "报账人",
+            "fieldType": "table",
+            "initMethodUrl": null,
+            "fieldTypeName": "弹出选择框",
+            "dataSourceId": "a2bdb0c8-00d1-7a2d-e053-0100007f3465",
+            "dataSourceJson": "{\"labelCode\":\"employeeName\",\"isDetail\":true,\"lovKey\":\"zfsAuth.findEmp\",\"service\":\"common\",\"trans\":[{\"to\":\"employeeName\",\"from\":\"REAL_NAME\"},{\"to\":\"employeeId\",\"from\":\"ID\"}]}",
+            "dataSourceName": "报表平台-单据查询-报账人",
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": null,
+            "sort": null
+        },
+        {
+            "id": "a55b53e4-16c0-7917-e053-0100007f352a",
+            "fieldCode": "boeStatus",
+            "fieldName": "单据状态",
+            "fieldType": "select",
+            "initMethodUrl": null,
+            "fieldTypeName": "下拉选择框",
+            "dataSourceId": "a2bdb0c8-00cb-7a2d-e053-0100007f3465",
+            "dataSourceJson": "{\"labelCode\":\"boeStatus\",\"fastCode\":\"BOE_STATUS\",\"filter\":[\"10\"],\"service\":\"boe\"}",
+            "dataSourceName": "报表平台-单据查询-单据状态",
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": "1",
+            "sort": 0
+        },
+        {
+            "id": "a55b53e4-16c4-7917-e053-0100007f352a",
+            "fieldCode": "employeeDeptId",
+            "fieldName": "报账部门",
+            "fieldType": "table",
+            "initMethodUrl": null,
+            "fieldTypeName": "弹出选择框",
+            "dataSourceId": "a2bdb0c8-00d4-7a2d-e053-0100007f3465",
+            "dataSourceJson": "{\"labelCode\":\"employeeDeptName\",\"isDetail\":true,\"lovKey\":\"rolelineMode.findDept\",\"trans\":[{\"to\":\"employeeDeptName\",\"from\":\"NAME\"},{\"to\":\"employeeDeptId\",\"from\":\"ID\"}]}",
+            "dataSourceName": "报表平台-单据查询-报账部门",
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": null,
+            "sort": null
+        },
+        {
+            "id": "a55b53e4-16c6-7917-e053-0100007f352a",
+            "fieldCode": "boeNo",
+            "fieldName": "单据编号",
+            "fieldType": "text",
+            "initMethodUrl": null,
+            "fieldTypeName": "文本输入框",
+            "dataSourceId": null,
+            "dataSourceJson": null,
+            "dataSourceName": null,
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": null,
+            "sort": null
+        },
+        {
+            "id": "e5a1fddb-f7a9-49ab-92b2-e1066cf34c94",
+            "fieldCode": "paymentMemo",
+            "fieldName": "付款用途",
+            "fieldType": "text",
+            "initMethodUrl": null,
+            "fieldTypeName": "文本输入框",
+            "dataSourceId": null,
+            "dataSourceJson": null,
+            "dataSourceName": null,
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": "1",
+            "sort": 0
+        },
+        {
+            "id": "f3890236-6b1b-4353-8e35-87fc4e026ee7",
+            "fieldCode": "vendorName",
+            "fieldName": "对方单位",
+            "fieldType": "table",
+            "initMethodUrl": null,
+            "fieldTypeName": "弹出选择框",
+            "dataSourceId": "a105f7a1-1d41-4cd3-a14d-c11f2e2a3b20",
+            "dataSourceJson": "{\n    \"labelCode\": \"vendorName\",\n    \"lovKey\": \"sysVendorMode.boeHerderVendor\",\n    \"prev\": {\n        \"le_id\": \"boeHeader.leId\"\n    },\n    \"trans\": [\n        {\n            \"from\": \"VENDOR_NAME\",\n            \"to\": \"vendorName\"\n        },\n        {\n            \"from\": \"ID\",\n            \"to\": \"vendorId\"\n        },\n        {\n            \"from\": \"VENDOR_TYPE_NAME\",\n            \"to\": \"vendorTypeName\"\n        },\n        {\n            \"from\": \"VENDOR_TYPE\",\n            \"to\": \"vendorType\"\n        }\n    ]\n}",
+            "dataSourceName": null,
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": "1",
+            "sort": 0
+        },
+        {
+            "id": "1943cbb8-61dc-4a3e-8bd5-9ba5a745e6f1",
+            "fieldCode": "leId",
+            "fieldName": "核算主体",
+            "fieldType": "table",
+            "initMethodUrl": null,
+            "fieldTypeName": "弹出选择框",
+            "dataSourceId": "11ba58ba-38ee-43f2-91b7-1e69db6103b1",
+            "dataSourceJson": "{\"labelCode\":\"leName\",\"isDetail\":true,\"lovKey\":\"sysFuLeMode.findNameAndCodeMore\",\"trans\":[{\"to\":\"leName\",\"from\":\"NAME\"},{\"to\":\"leId\",\"from\":\"ID\"}]}",
+            "dataSourceName": null,
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": "1",
+            "sort": 0
+        },
+        {
+            "id": "b01c9d10-8741-42b1-8a15-bc499db8f5ee",
+            "fieldCode": "disposeName",
+            "fieldName": "当前处理人",
+            "fieldType": "text",
+            "initMethodUrl": null,
+            "fieldTypeName": "文本输入框",
+            "dataSourceId": null,
+            "dataSourceJson": null,
+            "dataSourceName": null,
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": "1",
+            "sort": 0
+        },
+        {
+            "id": "27fe8c3a-ac55-4c98-95fa-6503452b6c6a",
+            "fieldCode": "applyAmount",
+            "fieldName": "报账金额",
+            "fieldType": "amount",
+            "initMethodUrl": null,
+            "fieldTypeName": "金额输入框",
+            "dataSourceId": "0458c91a-dc56-4aac-a4c3-f32929389e0b",
+            "dataSourceJson": "{\"code\":\"applyAmount\",\"start\":\"minAmount\",\"end\":\"maxAmount\",\"range\":true,\"type\":\"num\"}",
+            "dataSourceName": null,
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": "1",
+            "sort": 12
+        },
+        {
+            "id": "a55b53e4-16c8-7917-e053-0100007f352a",
+            "fieldCode": "operationTypeId",
+            "fieldName": "业务类型",
+            "fieldType": "table",
+            "initMethodUrl": null,
+            "fieldTypeName": "弹出选择框",
+            "dataSourceId": "a2bdb0c8-00c5-7a2d-e053-0100007f3465",
+            "dataSourceJson": "{\"labelCode\":\"operationTypeName\",\"isDetail\":true,\"lovKey\":\"zfsBoeStatementV.findBizCategory\",\"trans\":[{\"to\":\"operationTypeName\",\"from\":\"NAME\"},{\"to\":\"operationTypeId\",\"from\":\"ID\"}]}",
+            "dataSourceName": "报表平台-单据查询-业务类型",
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": null,
+            "sort": null
+        },
+        {
+            "id": "a55b53e4-16ca-7917-e053-0100007f352a",
+            "fieldCode": "projectId",
+            "fieldName": "项目",
+            "fieldType": "table",
+            "initMethodUrl": null,
+            "fieldTypeName": "弹出选择框",
+            "dataSourceId": "a2bdb0c8-00da-7a2d-e053-0100007f3465",
+            "dataSourceJson": "{\"labelCode\":\"projectName\",\"isDetail\":true,\"lovKey\":\"sysProjectMode.findNameAndCode\",\"trans\":[{\"to\":\"projectName\",\"from\":\"NAME\"},{\"to\":\"projectId\",\"from\":\"ID\"}]}",
+            "dataSourceName": "报表平台-单据查询-项目",
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": null,
+            "sort": null
+        },
+        {
+            "id": "a55b53e4-16cc-7917-e053-0100007f352a",
+            "fieldCode": "paymentStatus",
+            "fieldName": "付款状态",
+            "fieldType": "select",
+            "initMethodUrl": null,
+            "fieldTypeName": "下拉选择框",
+            "dataSourceId": "a2bdb0c8-00c8-7a2d-e053-0100007f3465",
+            "dataSourceJson": "{\"labelCode\":\"paymentStatus\",\"fastCode\":\"PAYMENTS_STATUS\",\"service\":\"boe\"}",
+            "dataSourceName": "报表平台-单据查询-付款状态",
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": "1",
+            "sort": 0
+        },
+        {
+            "id": "a55b53e4-16ce-7917-e053-0100007f352a",
+            "fieldCode": "boeAbstract",
+            "fieldName": "摘要",
+            "fieldType": "text",
+            "initMethodUrl": null,
+            "fieldTypeName": "文本输入框",
+            "dataSourceId": null,
+            "dataSourceJson": null,
+            "dataSourceName": null,
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": null,
+            "sort": null
+        },
+        {
+            "id": "a55b53e4-16d0-7917-e053-0100007f352a",
+            "fieldCode": "boeTypeId",
+            "fieldName": "单据类型",
+            "fieldType": "table",
+            "initMethodUrl": null,
+            "fieldTypeName": "弹出选择框",
+            "dataSourceId": "a2bdb0c8-00ce-7a2d-e053-0100007f3465",
+            "dataSourceJson": "{\"labelCode\":\"boeTypeName\",\"isDetail\":true,\"lovKey\":\"sysBoeTypeMode.findNameAndCodeMultiple\",\"trans\":[{\"to\":\"boeTypeName\",\"from\":\"BOE_TYPE_NAME\"},{\"to\":\"boeTypeId\",\"from\":\"ID\"}]}",
+            "dataSourceName": "报表平台-单据查询-单据类型",
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": "1",
+            "sort": 0
+        },
+        {
+            "id": "602d05d0-8c18-4c08-9bd7-c12b75bf7de0",
+            "fieldCode": "disposeCode",
+            "fieldName": "当前处理人",
+            "fieldType": "table",
+            "initMethodUrl": null,
+            "fieldTypeName": "弹出选择框",
+            "dataSourceId": "a2d18fa2-448d-4ce0-a3ba-c855d62b63ee",
+            "dataSourceJson": "{\"labelCode\":\"disposeName\",\"isDetail\":true,\"lovKey\":\"zfsAuth.findEmp\",\"service\":\"common\",\"trans\":[{\"to\":\"disposeName\",\"from\":\"REAL_NAME\"},{\"to\":\"disposeCode\",\"from\":\"EMP_NO\"}]}",
+            "dataSourceName": "报表平台-单据查询-当前处理人",
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": "1",
+            "sort": 0
+        },
+        {
+            "id": "c1e737a6-0793-42a1-9f00-4a646b8918b9",
+            "fieldCode": "deptId",
+            "fieldName": "报账部门多选",
+            "fieldType": "table",
+            "initMethodUrl": null,
+            "fieldTypeName": "弹出选择框",
+            "dataSourceId": "f53c817d-86d6-4a01-a32c-f74a929acb74",
+            "dataSourceJson": "{\n\t\t\t\t\t\t\t\t\t\t  \"labelCode\": \"deptName\",\n\t\t\t\t\t\t\t\t\t\t  \"isDetail\": true,\n\t\t\t\t\t\t\t\t\t\t  \"lovKey\": \"sysTravelModule.findDeptInfoSelection\",\n\t\t\t\t\t\t\t\t\t\t  \"trans\": [\n\t\t\t\t\t\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\t\t\t\t  \"to\": \"deptName\",\n\t\t\t\t\t\t\t\t\t\t\t  \"from\": \"NAME\"\n\t\t\t\t\t\t\t\t\t\t\t},\n\t\t\t\t\t\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\t\t\t\t  \"to\": \"deptId\",\n\t\t\t\t\t\t\t\t\t\t\t  \"from\": \"ID\"\n\t\t\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t\t\t  ]\n\t\t\t\t\t\t\t\t\t\t}",
+            "dataSourceName": "报表平台-单据查询-报账部门多选",
+            "reportId": "a55b53e4-16b1-7917-e053-0100007f352a",
+            "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+            "required": "1",
+            "sort": 0
+        }
+    ],
+    "_u": "database:zfsboestatementvPage.ureport.xml",
+    "report": {
+        "id": "a55b53e4-16b1-7917-e053-0100007f352a",
+        "reportCode": "zfsboestatementvPage.ureport.xml",
+        "reportName": "单据查询报表",
+        "reportType": "XY_REPORT_001002_TYPE_003",
+        "reportTypeName": null,
+        "fileContent": null,
+        "fileContentClob": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><ureport><cell expand=\"None\" name=\"A1\" row=\"1\" col=\"1\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[单据编号]]></simple-value></cell><cell expand=\"None\" name=\"B1\" row=\"1\" col=\"2\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[单据类型]]></simple-value></cell><cell expand=\"None\" name=\"C1\" row=\"1\" col=\"3\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[单据日期]]></simple-value></cell><cell expand=\"None\" name=\"D1\" row=\"1\" col=\"4\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[审核完成时间]]></simple-value></cell><cell expand=\"None\" name=\"E1\" row=\"1\" col=\"5\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[提单人]]></simple-value></cell><cell expand=\"None\" name=\"F1\" row=\"1\" col=\"6\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[报账人]]></simple-value></cell><cell expand=\"None\" name=\"G1\" row=\"1\" col=\"7\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[报账部门]]></simple-value></cell><cell expand=\"None\" name=\"H1\" row=\"1\" col=\"8\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[单据状态]]></simple-value></cell><cell expand=\"None\" name=\"I1\" row=\"1\" col=\"9\"><cell-style font-size=\"10\" forecolor=\"0,0,0\" font-family=\"宋体\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[影像状态]]></simple-value></cell><cell expand=\"None\" name=\"J1\" row=\"1\" col=\"10\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[付款状态]]></simple-value></cell><cell expand=\"None\" name=\"K1\" row=\"1\" col=\"11\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[当前处理人]]></simple-value></cell><cell expand=\"None\" name=\"L1\" row=\"1\" col=\"12\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[核算主体]]></simple-value></cell><cell expand=\"None\" name=\"M1\" row=\"1\" col=\"13\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[费用承担部门]]></simple-value></cell><cell expand=\"None\" name=\"N1\" row=\"1\" col=\"14\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[业务类型]]></simple-value></cell><cell expand=\"None\" name=\"O1\" row=\"1\" col=\"15\"><cell-style font-size=\"9\" forecolor=\"0,0,0\" font-family=\"宋体\" align=\"center\" valign=\"middle\" line-height=\"0\"></cell-style><simple-value><![CDATA[对方单位]]></simple-value></cell><cell expand=\"None\" name=\"P1\" row=\"1\" col=\"16\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[报账金额(本位币)]]></simple-value></cell><cell expand=\"None\" name=\"Q1\" row=\"1\" col=\"17\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[核销金额(本位币)]]></simple-value></cell><cell expand=\"None\" name=\"R1\" row=\"1\" col=\"18\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[付款金额(本位币)]]></simple-value></cell><cell expand=\"None\" name=\"S1\" row=\"1\" col=\"19\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[税金]]></simple-value></cell><cell expand=\"None\" name=\"T1\" row=\"1\" col=\"20\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[审核完成时间]]></simple-value></cell><cell expand=\"None\" name=\"U1\" row=\"1\" col=\"21\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[摘要]]></simple-value></cell><cell expand=\"None\" name=\"V1\" row=\"1\" col=\"22\"><cell-style font-size=\"9\" forecolor=\"0,0,0\" font-family=\"宋体\" align=\"center\" valign=\"middle\"></cell-style><simple-value><![CDATA[付款用途]]></simple-value></cell><cell expand=\"None\" name=\"W1\" row=\"1\" col=\"23\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><simple-value><![CDATA[支付金额]]></simple-value></cell><cell expand=\"Down\" name=\"A2\" row=\"2\" col=\"1\" left-cell=\"root\" link-url=\"/sys/report/ureport/zfsCustomReport/reportBillView\" link-target-window=\"_blank\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><link-parameter name=\"boeHeaderId\"><value><![CDATA[#.id]]></value></link-parameter><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"boeNo\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"B2\" row=\"2\" col=\"2\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"boeTypeName\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"C2\" row=\"2\" col=\"3\"><cell-style font-size=\"10\" format=\"yyyy年MM月dd日\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"firstBoeDate\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"D2\" row=\"2\" col=\"4\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"lastApprovalDate\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"E2\" row=\"2\" col=\"5\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"createName\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"F2\" row=\"2\" col=\"6\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"employeeName\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"G2\" row=\"2\" col=\"7\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"employeeDeptName\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"H2\" row=\"2\" col=\"8\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"boeStatusName\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"I2\" row=\"2\" col=\"9\"><cell-style font-size=\"10\" forecolor=\"0,0,0\" font-family=\"宋体\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"evsImgStatusName\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"J2\" row=\"2\" col=\"10\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"paymentStatusName\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"K2\" row=\"2\" col=\"11\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"disposeName\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"L2\" row=\"2\" col=\"12\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"leName\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"M2\" row=\"2\" col=\"13\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"expenseDeptName\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"N2\" row=\"2\" col=\"14\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"operationTypeName\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"O2\" row=\"2\" col=\"15\"><cell-style font-size=\"9\" forecolor=\"0,0,0\" font-family=\"宋体\" align=\"center\" valign=\"middle\"></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"vendorName\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"P2\" row=\"2\" col=\"16\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"applyAmount\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"Q2\" row=\"2\" col=\"17\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"cancelAmount\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"R2\" row=\"2\" col=\"18\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"paymentAmount\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"S2\" row=\"2\" col=\"19\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"taxAmount\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"T2\" row=\"2\" col=\"20\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"lastApprovalDate\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"U2\" row=\"2\" col=\"21\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"boeAbstract\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"V2\" row=\"2\" col=\"22\"><cell-style font-size=\"9\" forecolor=\"0,0,0\" font-family=\"宋体\" align=\"center\" valign=\"middle\"></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"paymentMemo\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><cell expand=\"Down\" name=\"W2\" row=\"2\" col=\"23\"><cell-style font-size=\"10\" align=\"center\" valign=\"middle\"><left-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><right-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><top-border width=\"1\" style=\"solid\" color=\"0,0,0\"/><bottom-border width=\"1\" style=\"solid\" color=\"0,0,0\"/></cell-style><dataset-value dataset-name=\"zfsboestatementvPage\" aggregate=\"select\" property=\"payAmount\" order=\"none\" mapping-type=\"simple\"></dataset-value></cell><row row-number=\"1\" height=\"28\" band=\"headerrepeat\"/><row row-number=\"2\" height=\"25\"/><column col-number=\"1\" width=\"164\"/><column col-number=\"2\" width=\"93\"/><column col-number=\"3\" width=\"119\"/><column col-number=\"4\" width=\"74\"/><column col-number=\"5\" width=\"89\"/><column col-number=\"6\" width=\"90\"/><column col-number=\"7\" width=\"132\"/><column col-number=\"8\" width=\"98\"/><column col-number=\"9\" width=\"74\"/><column col-number=\"10\" width=\"89\"/><column col-number=\"11\" width=\"95\"/><column col-number=\"12\" width=\"164\"/><column col-number=\"13\" width=\"101\"/><column col-number=\"14\" width=\"114\"/><column col-number=\"15\" width=\"74\"/><column col-number=\"16\" width=\"88\"/><column col-number=\"17\" width=\"85\"/><column col-number=\"18\" width=\"89\"/><column col-number=\"19\" width=\"74\"/><column col-number=\"20\" width=\"115\"/><column col-number=\"21\" width=\"152\"/><column col-number=\"22\" width=\"123\"/><column col-number=\"23\" width=\"74\"/><datasource name=\"ZfsRptSpringBeanDataSource\" type=\"spring\" bean=\"zfsRptSpringBeanDataSource\"><dataset name=\"zfsboestatementvPage\" type=\"bean\" method=\"zfsboestatementvPage\" clazz=\"\"><field name=\"boeNo\"/><field name=\"boeTypeId\"/><field name=\"boeTypeName\"/><field name=\"boeDate\"/><field name=\"createName\"/><field name=\"employeeName\"/><field name=\"employeeDeptName\"/><field name=\"boeStatusName\"/><field name=\"paymentStatusName\"/><field name=\"disposeName\"/><field name=\"leName\"/><field name=\"expenseDeptName\"/><field name=\"operationTypeName\"/><field name=\"projectName\"/><field name=\"applyAmount\"/><field name=\"cancelAmount\"/><field name=\"paymentAmount\"/><field name=\"paymentCurrency\"/><field name=\"taxAmount\"/><field name=\"lastApprovalDate\"/><field name=\"boeAbstract\"/><field name=\"certificateNo\"/><field name=\"id\"/><field name=\"payAmount\"/><field name=\"firstBoeDate\"/><field name=\"evsImgStatus\"/><field name=\"evsImgStatusName\"/><field name=\"lastApprovalDateStr\"/><field name=\"paymentMemo\"/><field name=\"vendorName\"/></dataset></datasource><paper type=\"A4\" left-margin=\"90\" right-margin=\"90\"\n    top-margin=\"72\" bottom-margin=\"72\" paging-mode=\"fitpage\" fixrows=\"0\"\n    width=\"595\" height=\"842\" orientation=\"portrait\" html-report-align=\"left\" bg-image=\"\" html-interval-refresh-value=\"0\" column-enabled=\"false\"></paper><search-form form-position=\"up\"/></ureport>",
+        "fileCount": 0,
+        "groupId": "accba517-5725-4fae-8938-48946676bfc1",
+        "icon": "rizhi",
+        "validityFlag": "0",
+        "validityName": null,
+        "enabledFlag": "0",
+        "createBy": "-1",
+        "createByName": null,
+        "createDate": "2020-05-11 15:30:56",
+        "lastUpdateBy": "e3e40f4c-d011-4f08-9321-d2e7e9d0b168",
+        "lastUpdateDate": "2023-04-24 13:59:39"
+    },
+    "type": "INFO"
+}
+
+
+
+信息接口
+curl "http://10.3.102.173/sys/report/ureport/zfsCustomReport/previewReport?reportName=^%^E5^%^8D^%^95^%^E6^%^8D^%^AE^%^E6^%^9F^%^A5^%^E8^%^AF^%^A2^%^E6^%^8A^%^A5^%^E8^%^A1^%^A8&reportCode=zfsboestatementvPage.ureport.xml&_u=database^%^3AzfsboestatementvPage.ureport.xml&startBoeDate=2025-7-19^%^2000^%^3A00^%^3A00&endBoeDate=2025-10-16^%^2023^%^3A59^%^3A59&st=1760596758052&_i=1&zfsReportPageSize_=10&zfs_rptReportType_=XY_REPORT_001002_TYPE_003" ^
+  -H "Connection: keep-alive" ^
+  -H "Upgrade-Insecure-Requests: 1" ^
+  -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36" ^
+  -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9" ^
+  -H "Referer: http://10.3.102.173/report/" ^
+  -H "Accept-Language: zh-CN,zh;q=0.9" ^
+  -H "Cookie: VUE_APP_VERSION=2.0.5; user_language=zh-CN; jobLevel=null; deptId=f8451745-5383-429e-92c5-247313304b3f; empId=bb12a8d3-467f-4a86-a5bd-6b240d365db7; boeUrl=; AlteonPcgsh=A33Cfa1mAwpCEV53ATNhGw^$^$; ZTESSCAUTH=eba90f61-f83e-4a00-96bd-41b376d33efc; userInfo=^%^7B^%^22cnName^%^22^%^3A^%^22^%^E5^%^85^%^B1^%^E4^%^BA^%^AB^%^E4^%^B8^%^AD^%^E5^%^BF^%^83-^%^E6^%^9D^%^8E^%^E7^%^91^%^BE^%^22^%^2C^%^22empId^%^22^%^3A^%^22bb12a8d3-467f-4a86-a5bd-6b240d365db7^%^22^%^2C^%^22roleTypeList^%^22^%^3A^%^5B^%^223^%^22^%^2C^%^224^%^22^%^2C^%^222^%^22^%^2C^%^222^%^22^%^2C^%^222^%^22^%^2C^%^222^%^22^%^5D^%^2C^%^22loginName^%^22^%^3A^%^2210030^%^22^%^2C^%^22deptName^%^22^%^3A^%^22^%^E7^%^B3^%^BB^%^E7^%^BB^%^9F^%^E8^%^BF^%^90^%^E7^%^BB^%^B4^%^E7^%^BB^%^84^%^22^%^2C^%^22groupId^%^22^%^3A^%^22accba517-5725-4fae-8938-48946676bfc1^%^22^%^2C^%^22groupName^%^22^%^3A^%^22^%^E4^%^B8^%^8A^%^E6^%^B5^%^B7^%^E9^%^93^%^81^%^E8^%^B7^%^AF^%^E5^%^B1^%^80^%^22^%^2C^%^22empType^%^22^%^3A^%^22normal^%^22^%^2C^%^22leName^%^22^%^3A^%^22^%^E5^%^BC^%^80^%^E5^%^8F^%^91^%^E6^%^B5^%^8B^%^E8^%^AF^%^95^%^E6^%^A0^%^B8^%^E7^%^AE^%^97^%^E4^%^B8^%^BB^%^E4^%^BD^%^93^%^22^%^2C^%^22mainPost^%^22^%^3A^%^2221f7f78e-f63a-4b7c-befd-7cb5aa602766^%^22^%^2C^%^22extendS1^%^22^%^3A^%^220^%^22^%^7D" ^
+  --compressed ^
+  --insecure
+
+
+
+<!DOCTYPE html>
+<html style="overflow: hidden;">
+<head>
+    <meta charset="UTF-8">
+    <link href="/ureport/res/ureport-asserts/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <meta http-equiv="Cache-Control" content="no-siteapp"/>
+    <meta name="viewport" content="initial-scale=1, maximum-scale=3, minimum-scale=1, user-scalable=no">
+    <title>database:zfsboestatementvPage-ureport</title>
+    <style type="text/css" id="_ureport_table_style">
+        ._A1{width:164pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._B1{width:93pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._C1{width:119pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._D1{width:74pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._E1{width:89pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._F1{width:90pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._G1{width:132pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._H1{width:98pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._I1{width:74pt;text-align:center;vertical-align:middle;font-family:宋体;font-size:10pt;color:rgb(0,0,0);border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._J1{width:89pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._K1{width:95pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._L1{width:164pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._M1{width:101pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._N1{width:114pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._O1{width:74pt;text-align:center;vertical-align:middle;font-family:宋体;font-size:9pt;color:rgb(0,0,0);}._P1{width:88pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._Q1{width:85pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._R1{width:89pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._S1{width:74pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._T1{width:115pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._U1{width:152pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._V1{width:123pt;text-align:center;vertical-align:middle;font-family:宋体;font-size:9pt;color:rgb(0,0,0);}._W1{width:74pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._A2{width:164pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._B2{width:93pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._C2{width:119pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._D2{width:74pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._E2{width:89pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._F2{width:90pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._G2{width:132pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._H2{width:98pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._I2{width:74pt;text-align:center;vertical-align:middle;font-family:宋体;font-size:10pt;color:rgb(0,0,0);border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._J2{width:89pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._K2{width:95pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._L2{width:164pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._M2{width:101pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._N2{width:114pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._O2{width:74pt;text-align:center;vertical-align:middle;font-family:宋体;font-size:9pt;color:rgb(0,0,0);}._P2{width:88pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._Q2{width:85pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._R2{width:89pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._S2{width:74pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._T2{width:115pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._U2{width:152pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._V2{width:123pt;text-align:center;vertical-align:middle;font-family:宋体;font-size:9pt;color:rgb(0,0,0);}._W2{width:74pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}
+    </style>
+    <style>
+        #_ureport_table tbody tr:nth-child(2n) {
+            background-color: #f7f7f7 !important;
+        }
+
+        #_ureport_table thead tr:nth-child(2n+1) {
+            background-color: #f7f7f7 !important;
+        }
+
+        /*#_ureport_table {*/
+        /*    width: 100%;*/
+        /*    overflow-x: auto;*/
+        /*    margin-bottom: 80px;*/
+        /*    overflow-y: hidden;*/
+        /*}*/
+
+        /*#_ureport_table table {*/
+        /*    min-width: 98%;*/
+        /*    height: 100%;*/
+        /*}*/
+
+        /*#_ureport_table table tbody {*/
+        /*    height: calc(100% - 32px);*/
+        /*    overflow-y: auto;*/
+        /*}*/
+
+
+    </style>
+    <script type="text/javascript" src="/ureport/res/ureport-asserts/venderjs/jquery.min.js"></script>
+    <script type="text/javascript" src="/ureport/res/ureport-asserts/venderjs/bootstrap.min.js"></script>
+    <script type="text/javascript"
+            src="/ureport/res/ureport-asserts/venderjs/Chart.bundle.min.js"></script>
+    <script type="text/javascript"
+            src="/ureport/res/ureport-asserts/venderjs/chartjs-plugin-datalabels.min.js"></script>
+    <script type="text/javascript"
+            src="/ureport/res/ureport-asserts/venderjs/bootstrap-datetimepicker.js"></script>
+    <script type="text/javascript" src="/ureport/res/ureport-asserts/js/preview.bundle.js"></script>
+</head>
+<body style="margin:5px">
+<form  style='margin-top:10px;margin-bottom:10px'></form>
+
+
+<!--add by 陈均高，加入分页-->
+<span id="reportPageIndex" style="display:none;">1</span>
+<span id="reportTotalPage" style="display:none;">47990</span>
+<span id="reportTotalCount" style="display:none;">479894</span>
+
+<div id="_ureport_table" style="float:left">
+    <table border='0' style='margin:auto;border-collapse:collapse;width:2370pt'><tr style="height:28pt"><td class='_A1'  >单据编号</td><td class='_B1'  >单据类型</td><td class='_C1'  >单据日期</td><td class='_D1'  >审核完成时间</td><td class='_E1'  >提单人</td><td class='_F1'  >报账人</td><td class='_G1'  >报账部门</td><td class='_H1'  >单据状态</td><td class='_I1'  >影像状态</td><td class='_J1'  >付款状态</td><td class='_K1'  >当前处理人</td><td class='_L1'  >核算主体</td><td class='_M1'  >费用承担部门</td><td class='_N1'  >业务类型</td><td class='_O1'  >对方单位</td><td class='_P1'  >报账金额(本位币)</td><td class='_Q1'  >核销金额(本位币)</td><td class='_R1'  >付款金额(本位币)</td><td class='_S1'  >税金</td><td class='_T1'  >审核完成时间</td><td class='_U1'  >摘要</td><td class='_V1'  >付款用途</td><td class='_W1'  >支付金额</td></tr><tr style="height:25pt"><td class='_A2'  ><a href="/sys/report/ureport/zfsCustomReport/reportBillView?boeHeaderId=b16aa09e-11cd-4e6e-868b-35c5be726140" target="_blank">SH-BX2510167384</a></td><td class='_B2'  >短途运输费报账单</td><td class='_C2'  >2025-10-16&nbsp;14:33:56</td><td class='_D2'  >&nbsp;</td><td class='_E2'  >郑伟</td><td class='_F2'  >郑伟</td><td class='_G2'  >常熟探伤工区</td><td class='_H2'  >待业务审批</td><td class='_I2'  >未上传</td><td class='_J2'  >待付款</td><td class='_K2'  >李坤</td><td class='_L2'  >中国铁路上海局集团有限公司上海工务段</td><td class='_M2'  >常熟探伤工区</td><td class='_N2'  >短途运输（生产用）</td><td class='_O2'  >郑伟</td><td class='_P2'  >450.3</td><td class='_Q2'  >450.3</td><td class='_R2'  >0</td><td class='_S2'  >13.12</td><td class='_T2'  >&nbsp;</td><td class='_U2'   title='汽车沪EBK771通行费3月共计450.30元（提单人垫付）' >汽车沪EBK771通行费3月共计450....</td><td class='_V2'  >车辆通行费</td><td class='_W2'  >&nbsp;</td></tr><tr style="height:25pt"><td class='_A2'  ><a href="/sys/report/ureport/zfsCustomReport/reportBillView?boeHeaderId=2e7a3895-8df3-4e5e-9aa2-b6b6faaf3de8" target="_blank">SH-BX2510167558</a></td><td class='_B2'  >差旅费事后审批单</td><td class='_C2'  >2025-10-16&nbsp;14:33:45</td><td class='_D2'  >&nbsp;</td><td class='_E2'  >张旭</td><td class='_F2'  >张旭</td><td class='_G2'  >管理人员</td><td class='_H2'  >待业务审批</td><td class='_I2'  >无需上传</td><td class='_J2'  >无需付款</td><td class='_K2'  >唐寅生</td><td class='_L2'  >中国铁路上海局集团有限公司上海通信段</td><td class='_M2'  >管理人员</td><td class='_N2'  >出差事后审批</td><td class='_O2'  >&nbsp;</td><td class='_P2'  >0</td><td class='_Q2'  >&nbsp;</td><td class='_R2'  >0</td><td class='_S2'  >0</td><td class='_T2'  >&nbsp;</td><td class='_U2'  >滁州：沙河集综控施工作业</td><td class='_V2'  >&nbsp;</td><td class='_W2'  >&nbsp;</td></tr><tr style="height:25pt"><td class='_A2'  ><a href="/sys/report/ureport/zfsCustomReport/reportBillView?boeHeaderId=c834fec6-c032-4e89-9999-c4aa2af84bc5" target="_blank">SH-BX2510167542</a></td><td class='_B2'  >运输部门直接费报账单</td><td class='_C2'  >2025-10-16&nbsp;14:33:42</td><td class='_D2'  >&nbsp;</td><td class='_E2'  >贾广玉</td><td class='_F2'  >贾广玉</td><td class='_G2'  >计划财务部</td><td class='_H2'  >待业务审批</td><td class='_I2'  >无需上传</td><td class='_J2'  >待付款</td><td class='_K2'  >李兆宇</td><td class='_L2'   title='中国铁路上海局集团有限公司徐州铁路物流中心' >中国铁路上海局集团有限公司徐州铁路物流中...</td><td class='_M2'  >计划财务部</td><td class='_N2'  >货物运输</td><td class='_O2'  >中国联合网络通信有限公司徐州市分公司</td><td class='_P2'  >100</td><td class='_Q2'  >0</td><td class='_R2'  >0</td><td class='_S2'  >0</td><td class='_T2'  >&nbsp;</td><td class='_U2'  >好</td><td class='_V2'  >&nbsp;发</td><td class='_W2'  >&nbsp;</td></tr><tr style="height:25pt"><td class='_A2'  ><a href="/sys/report/ureport/zfsCustomReport/reportBillView?boeHeaderId=a4608b02-ed79-44c2-8d5e-9313ec285b73" target="_blank">SH-BX2510162816</a></td><td class='_B2'  >其他间管费报账单</td><td class='_C2'  >2025-10-16&nbsp;14:33:42</td><td class='_D2'  >&nbsp;</td><td class='_E2'  >丁毅</td><td class='_F2'  >丁毅</td><td class='_G2'  >办公室</td><td class='_H2'  >待业务审批</td><td class='_I2'  >未上传</td><td class='_J2'  >待付款</td><td class='_K2'  >吴涛</td><td class='_L2'  >中国铁路上海局集团有限公司合肥工务段</td><td class='_M2'  >办公室</td><td class='_N2'  >办公费（生产用）</td><td class='_O2'  >阳采集团有限公司</td><td class='_P2'  >829.38</td><td class='_Q2'  >0</td><td class='_R2'  >0</td><td class='_S2'  >95.42</td><td class='_T2'  >&nbsp;</td><td class='_U2'  >重一、肥东及机关办公用纸费</td><td class='_V2'  >机关及车间用办公用品费</td><td class='_W2'  >&nbsp;</td></tr><tr style="height:25pt"><td class='_A2'  ><a href="/sys/report/ureport/zfsCustomReport/reportBillView?boeHeaderId=13ab730f-8989-4b3d-bedd-8d175c908267" target="_blank">SH-BX2510167545</a></td><td class='_B2'  >差旅费事后审批单</td><td class='_C2'  >2025-10-16&nbsp;14:33:41</td><td class='_D2'  >&nbsp;</td><td class='_E2'  >韩天宇</td><td class='_F2'  >韩天宇</td><td class='_G2'  >南京信息设备维护</td><td class='_H2'  >待业务审批</td><td class='_I2'  >无需上传</td><td class='_J2'  >无需付款</td><td class='_K2'  >史俊</td><td class='_L2'  >中国铁路上海局集团有限公司南京电务段</td><td class='_M2'  >南京信息设备维护</td><td class='_N2'  >出差事后审批</td><td class='_O2'  >&nbsp;</td><td class='_P2'  >0</td><td class='_Q2'  >&nbsp;</td><td class='_R2'  >0</td><td class='_S2'  >0</td><td class='_T2'  >&nbsp;</td><td class='_U2'   title='7.3-7.4扬州北站电源屏年检；7.12-7.13如皋站处理安全数据网，7.17-7.18泰州西对中继1安全数据网中断；7.30-7.31海安站值守；8.2-8.3栟茶站doc倒机单元故障应急处理；8.5高资站tdcs局部大修，8.6-8.7海安站对中心ctc通道异常，8.12六摆渡站TDCS局部大修，8.25-8.26沪宁沿江中继六电子设备集中检修，8.26-8.27江都站限速试验报文提取；8.31-9.1南通动车所ctc应急处理；9.2南通动车所ctc应急处理；9.9-9.10扬州站ctc\tdcs局部大修；9.17-9.18国道村线路所ctc软件升级；9.18-9.19海安站ctc\tdcs局部大修；9.22-9.23通州湾ctc软件优化；9.23-9.24南通西电源屏更换；9.24-9.25沪宁沿江中继4年检' >7.3-7.4扬州北站电源屏年检；7.1...</td><td class='_V2'  >&nbsp;</td><td class='_W2'  >&nbsp;</td></tr><tr style="height:25pt"><td class='_A2'  ><a href="/sys/report/ureport/zfsCustomReport/reportBillView?boeHeaderId=68231e49-758e-4759-bff0-80609e306990" target="_blank">SH-BX2510167515</a></td><td class='_B2'  >其他间管费报账单</td><td class='_C2'  >2025-10-16&nbsp;14:33:34</td><td class='_D2'  >&nbsp;</td><td class='_E2'  >汤心宇</td><td class='_F2'  >汤心宇</td><td class='_G2'  >六安高铁检查工区</td><td class='_H2'  >待业务审批</td><td class='_I2'  >未上传</td><td class='_J2'  >待付款</td><td class='_K2'  >胡雷雷</td><td class='_L2'  >中国铁路上海局集团有限公司合肥电务段</td><td class='_M2'  >六安高铁检查工区</td><td class='_N2'  >福利费</td><td class='_O2'  >六安市裕安区许亮商贸部</td><td class='_P2'  >552</td><td class='_Q2'  >0</td><td class='_R2'  >0</td><td class='_S2'  >5.47</td><td class='_T2'  >&nbsp;</td><td class='_U2'   title='六安高铁信号车间购买防暑降温饮用水（第二批增补），无合同' >六安高铁信号车间购买防暑降温饮用水（第二...</td><td class='_V2'  >防暑降温水&nbsp;六安高</td><td class='_W2'  >&nbsp;</td></tr><tr style="height:25pt"><td class='_A2'  ><a href="/sys/report/ureport/zfsCustomReport/reportBillView?boeHeaderId=cde6fe88-40b7-4ee1-9be0-9c79205ec14c" target="_blank">SH-ZJ2510150234</a></td><td class='_B2'  >收款报账单</td><td class='_C2'  >2025-10-16&nbsp;14:33:31</td><td class='_D2'  >&nbsp;</td><td class='_E2'  >武星宇</td><td class='_F2'  >武星宇</td><td class='_G2'  >计划财务科</td><td class='_H2'  >待业务审批</td><td class='_I2'  >无需上传</td><td class='_J2'  >无需付款</td><td class='_K2'  >rpa0004</td><td class='_L2'  >中国铁路上海局集团有限公司杭州供电段</td><td class='_M2'  >计划财务科</td><td class='_N2'  >核销应收</td><td class='_O2'  >中铁四局集团有限公司</td><td class='_P2'  >154500</td><td class='_Q2'  >&nbsp;</td><td class='_R2'  >0</td><td class='_S2'  >0</td><td class='_T2'  >&nbsp;</td><td class='_U2'  >施工配合费应收施工配合费</td><td class='_V2'  >&nbsp;</td><td class='_W2'  >&nbsp;</td></tr><tr style="height:25pt"><td class='_A2'  ><a href="/sys/report/ureport/zfsCustomReport/reportBillView?boeHeaderId=6d37752f-640f-46b5-9a51-02a40e919bef" target="_blank">SH-BX2510167040</a></td><td class='_B2'  >其他间管费报账单</td><td class='_C2'  >2025-10-16&nbsp;14:33:31</td><td class='_D2'  >&nbsp;</td><td class='_E2'  >朱日升</td><td class='_F2'  >朱日升</td><td class='_G2'  >金华南高铁信号工区</td><td class='_H2'  >待业务审批</td><td class='_I2'  >未上传</td><td class='_J2'  >待付款</td><td class='_K2'  >邵东</td><td class='_L2'  >中国铁路上海局集团有限公司杭州电务段</td><td class='_M2'  >金华南高铁信号工区</td><td class='_N2'  >职工教育经费</td><td class='_O2'  >朱日升</td><td class='_P2'  >4400</td><td class='_Q2'  >0</td><td class='_R2'  >0</td><td class='_S2'  >0</td><td class='_T2'  >&nbsp;</td><td class='_U2'  >朱日升参加成人学历学费补贴（提单人垫付）</td><td class='_V2'  >朱日升参加成人学历学费补贴</td><td class='_W2'  >&nbsp;</td></tr><tr style="height:25pt"><td class='_A2'  ><a href="/sys/report/ureport/zfsCustomReport/reportBillView?boeHeaderId=57e324c1-0357-41f9-b8e9-650475142502" target="_blank">SH-ZJ2510167470</a></td><td class='_B2'  >收款报账单</td><td class='_C2'  >2025-10-16&nbsp;14:33:31</td><td class='_D2'  >&nbsp;</td><td class='_E2'  >庄雅晴</td><td class='_F2'  >庄雅晴</td><td class='_G2'  >计划财务科</td><td class='_H2'  >待业务审批</td><td class='_I2'  >无需上传</td><td class='_J2'  >无需付款</td><td class='_K2'  >rpa0004</td><td class='_L2'  >中国铁路上海局集团有限公司徐州房建公寓段</td><td class='_M2'  >计划财务科</td><td class='_N2'  >不分客商其他收款-押金/代收资金</td><td class='_O2'  >中国铁路上海局集团有限公司徐州房建公寓段</td><td class='_P2'  >954.42</td><td class='_Q2'  >&nbsp;</td><td class='_R2'  >0</td><td class='_S2'  >0</td><td class='_T2'  >&nbsp;</td><td class='_U2'  >电子汇入</td><td class='_V2'  >&nbsp;</td><td class='_W2'  >&nbsp;</td></tr><tr style="height:25pt"><td class='_A2'  ><a href="/sys/report/ureport/zfsCustomReport/reportBillView?boeHeaderId=6183b689-d552-46e9-8e77-e26ae5379116" target="_blank">SH-BX2510167555</a></td><td class='_B2'  >差旅费事后审批单</td><td class='_C2'  >2025-10-16&nbsp;14:33:28</td><td class='_D2'  >&nbsp;</td><td class='_E2'  >郎茜</td><td class='_F2'  >郎茜</td><td class='_G2'  >业务部</td><td class='_H2'  >待业务审批</td><td class='_I2'  >无需上传</td><td class='_J2'  >无需付款</td><td class='_K2'  >房军</td><td class='_L2'  >上海华铁旅客服务有限公司(本级)</td><td class='_M2'  >业务部</td><td class='_N2'  >出差事后审批</td><td class='_O2'  >&nbsp;</td><td class='_P2'  >0</td><td class='_Q2'  >&nbsp;</td><td class='_R2'  >0</td><td class='_S2'  >0</td><td class='_T2'  >&nbsp;</td><td class='_U2'  >盐城，现场检查。</td><td class='_V2'  >&nbsp;</td><td class='_W2'  >&nbsp;</td></tr></table>
+</div>
+<iframe name="_print_frame" width="0" height="0" frameborder="0" src="about:blank"></iframe>
+<iframe name="_print_pdf_frame" width="0" height="0" frameborder="0" src="about:blank"></iframe>
+<script type="text/javascript">
+    window._server = "/ureport";
+    window.formElements = [];
+    $(document).ready(function () {
+
+        buildPaging(1, 47990);
+
+
+            _buildChartDatas();
+
+        
+        function doSearch() {
+            submitSearchForm("database:zfsboestatementvPage.ureport.xml", "endBoeDate=2025-10-16 23:59:59&st=1760596758052&reportName=单据查询报表&reportCode=zfsboestatementvPage.ureport.xml&zfs_rptReportType_=XY_REPORT_001002_TYPE_003&zfsReportPageSize_=10&startBoeDate=2025-7-19 00:00:00&requiredFlag=true");
+        }
+    });
+
+    $(function () {
+        // 设置表头固定
+        //setTableHeaderFixed();
+        // 设置无数据时的提示
+        // setNoDataTips();
+    });
+
+    /**
+     * 设置表头固定
+     */
+    function setTableHeaderFixed() {
+        var _tbodyObj = $("div#_ureport_table table tbody");
+        var _tableHeaderHtml = $(_tbodyObj).find("tr").first().html();
+        var _styleStr = $(_tbodyObj).find("tr").first().attr("style");
+        $(_tbodyObj).find("tr").first().remove();
+        $("div#_ureport_table table").prepend("<thead><tr style='" +
+            _styleStr +
+            "'>" + _tableHeaderHtml + "</tr></thead>"
+        );
+    }
+
+    /**
+     * 设置无数据时的提示
+     */
+    function setNoDataTips() {
+        var _tbodyObj = $("div#_ureport_table table tbody");
+        var _dataRows = $(_tbodyObj).find("tr").length;
+        var _dataCells = $(_tbodyObj).find("tr").last().find("td").length;
+        // 如果只有一行，说明有可能无数据
+        if (_dataRows == 1) {
+            // 是否无数据，默认无数据
+            var noDataFlag = true;
+            $(_tbodyObj).find("tr").last().find("td").each(function () {
+                // 只要有一列的值不为空则说明有数据
+                if ($(this).text().trim() != "") {
+                    noDataFlag = false;
+                    return false;
+                }
+            });
+            if (noDataFlag) {
+                // 为了保证字体样式，先获取第一行的样式
+                var _styleStr = $(_tbodyObj).find("tr").last().find("td").eq(0).attr("style");
+                var _classStr = $(_tbodyObj).find("tr").last().find("td").eq(0).attr("class");
+                // 没有数据时，将最后一行空白行删掉，并加上提示语
+                $(_tbodyObj).find("tr").last().remove();
+                $(_tbodyObj).append("<tr><td style='" + _styleStr + "' colspan='" + _dataCells + "' class='" + _classStr + "'>没有符合条件的数据</td></tr>");
+            }
+        }
+        $("html").css("height", "97%");
+    }
+</script>
+</body>
+</html>

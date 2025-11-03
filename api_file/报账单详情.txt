@@ -1,0 +1,188 @@
+import requests
+from requests.utils import dict_from_cookiejar
+
+url = "http://10.3.102.173/sys/auth/login"
+
+params = {"loginKey": "10030", "password": "PhhLGbYaZgsvNKJ2YjHF3A=="}
+
+response = requests.post(url, data=params)
+# print("登录的Cookies", response.cookies.get("ZTESSCAUTH"))
+# print(dict_from_cookiejar(response.cookies))
+print("登陆成功返回的数据", response.json())
+
+login_headers = {
+    # "Connection": "keep-alive",
+    # "Accept": "application/json, text/plain, */*",
+    # "Accept-Language": "zh-CN",
+    # "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+    #               "Chrome/97.0.4692.71 Safari/537.36",
+    # "Referer": "http://10.3.102.173/",
+    # "Content-Type": "application/x-www-form-urlencoded",
+    # "authkey": "PiK0iSYIrs559DnX1Wcr3UOaWIKk0hNd5yhIaknVf7DGSVuPJUJpFZ9tRsS0ZUdB",
+}
+
+cookies = dict_from_cookiejar(response.cookies)
+cookie_str = "; ".join([f"{k}={v}" for k, v in cookies.items()])
+login_headers["Cookie"] = cookie_str
+print("登录的Cookie", cookie_str)
+
+# # 获取全量单据
+re_url = "http://10.3.102.173/sys/report/ureport/zfsCustomReport/previewReport?boeNo=SH-BX2510235921&_u=database%3AzfsboestatementvPage.ureport.xml"
+response1 = requests.get(re_url, headers=login_headers)
+response1.raise_for_status()
+print(response1.text)
+
+
+# 获取单据详情
+re1_url = "http://10.3.102.173/sys/boe/core/editDraftBoe"
+payload = {
+    "boeNo": "SH-ZJ2510299709",
+    "boeHeaderId": "d9c9bde6-dcfe-47d2-b9ad-177f06cffdab",
+    "key": "0MQ/TJHOFRPXdpVU7NxEQN6a+Tjjv0WP"
+    # "key": "ducg7hdc7WSew+KW7YFZNERX8rHNlDgi"
+}
+response2 = requests.post(re1_url, data=payload)
+response2.raise_for_status()
+print("response", response2.text)
+
+
+
+
+
+D:\python312\python.exe D:\pp\minioSync\GXZH\test.py 
+登陆成功返回的数据 {'msg': 'success', 'code': 0, 'bodyColor': None, 'icon': [{'serviceIcon': '/group1/M00/39/26/CgQ2nmZprYqARp-vAAImWPOsnl8580.png', 'serviceCode': 'pes'}, {'serviceIcon': '/group1/M00/39/26/CgQ2nmZprYqARp-vAAImWPOsnl8580.png', 'serviceCode': 'guideconf'}, {'serviceIcon': '/group1/M00/39/26/CgQ2nmZprYqARp-vAAImWPOsnl8580.png', 'serviceCode': 'archives'}, {'serviceIcon': '/group1/M00/39/1F/CgQ2nmZpm2-AcXP6AABOGCSbHqo975.png', 'serviceCode': 'public'}, {'serviceIcon': '/group1/M00/41/02/CgQ2nmZw6raAaBXQAAAYT_DQukE037.png', 'serviceCode': 'easconf'}, {'serviceIcon': '/group1/M00/39/1F/CgQ2nmZpm2-AcXP6AABOGCSbHqo975.png', 'serviceCode': 'guideconf'}, {'serviceIcon': '/group1/M00/39/26/CgQ2nmZprYqARp-vAAImWPOsnl8580.png', 'serviceCode': 'log'}, {'serviceIcon': '/group1/M00/41/07/CgQ2nmZw61OAbW6nAA73lnG_wic031.png', 'serviceCode': 'fscconf'}, {'serviceIcon': '/group1/M00/39/26/CgQ2nmZprYqARp-vAAImWPOsnl8580.png', 'serviceCode': 'ip'}, {'serviceIcon': '/group1/M00/39/26/CgQ2nmZprYqARp-vAAImWPOsnl8580.png', 'serviceCode': 'public'}, {'serviceIcon': '/group1/M00/39/1F/CgQ2nmZpm2-AcXP6AABOGCSbHqo975.png', 'serviceCode': 'fcp'}, {'serviceIcon': '/group1/M00/41/01/CgQ2nmZw6oaAeKDrAAAYT_DQukE669.png', 'serviceCode': 'eas'}, {'serviceIcon': '/group1/M00/39/26/CgQ2nmZprYqARp-vAAImWPOsnl8580.png', 'serviceCode': 'bgt'}, {'serviceIcon': '/group1/M00/41/07/CgQ2nmZw6z-ABZ2DAA8Au1rF0pg635.png', 'serviceCode': 'ipool'}, {'serviceIcon': '/group1/M00/39/1F/CgQ2nmZpm2-AcXP6AABOGCSbHqo975.png', 'serviceCode': 'cms'}, {'serviceIcon': '/group1/M00/39/1F/CgQ2nmZpm2-AcXP6AABOGCSbHqo975.png', 'serviceCode': 'rfms'}, {'serviceIcon': '/group1/M00/41/04/CgQ2nmZw6xGALHCCAA712ozz38I486.png', 'serviceCode': 'ledger'}, {'serviceIcon': '/group1/M00/41/06/CgQ2nmZw6zWAR3BWAAAYFafsG3o094.png', 'serviceCode': 'claim'}, {'serviceIcon': '/group1/M00/39/26/CgQ2nmZprYqARp-vAAImWPOsnl8580.png', 'serviceCode': 'evs'}, {'serviceIcon': '/group1/M00/39/26/CgQ2nmZprYqARp-vAAImWPOsnl8580.png', 'serviceCode': 'rule'}, {'serviceIcon': '/group1/M00/41/04/CgQ2nmZw6xmAE042AA712ozz38I950.png', 'serviceCode': 'ledgerconf'}, {'serviceIcon': '/group1/M00/39/1F/CgQ2nmZpm2-AcXP6AABOGCSbHqo975.png', 'serviceCode': 'itc'}, {'serviceIcon': '/group1/M00/41/05/CgQ2nmZw6yGAEW5vAAAXQyaBKoM884.png', 'serviceCode': 'config'}, {'serviceIcon': '/group1/M00/41/06/CgQ2nmZw6y2AOc_GAAAWtiPpksY054.png', 'serviceCode': 'report'}, {'serviceIcon': '/group1/M00/41/01/CgQ2nmZw6paAWJp2AAAZVJcd18M048.png', 'serviceCode': 'bas'}, {'serviceIcon': '/group1/M00/41/04/CgQ2nmZw6wSAb-iNAA73lnG_wic353.png', 'serviceCode': 'fsc'}, {'serviceIcon': '/group1/M00/39/26/CgQ2nmZprYqARp-vAAImWPOsnl8580.png', 'serviceCode': 'itc'}, {'serviceIcon': '/group1/M00/39/26/CgQ2nmZprYqARp-vAAImWPOsnl8580.png', 'serviceCode': 'rfms'}, {'serviceIcon': '/group1/M00/39/26/CgQ2nmZprYqARp-vAAImWPOsnl8580.png', 'serviceCode': 'cms'}, {'serviceIcon': '/group1/M00/39/26/CgQ2nmZprYqARp-vAAImWPOsnl8580.png', 'serviceCode': 'fcp'}, {'serviceIcon': '/group1/M00/41/07/CgQ2nmZw60aADLSEAAAcVZUBRB4089.png', 'serviceCode': 'base'}], 'type': 'INFO', 'user': {'id': '6f8e592e-b96e-4f1e-ae40-8e46c2f968da', 'groupId': 'accba517-5725-4fae-8938-48946676bfc1', 'ip': '10.3.102.25', 'loginName': '10030', 'cnName': '共享中心-李瑾', 'enName': None, 'empId': 'bb12a8d3-467f-4a86-a5bd-6b240d365db7', 'empName': None, 'gender': None, 'email': None, 'mobile': None, 'enable': None, 'superAdmin': '2', 'validityFlag': '0', 'enabledFlag': '0', 'language': 'zh-CN', 'travelLevel': 'EL0002', 'creditFraction': None, 'cardNo': '2025020500000030', 'mainPost': '21f7f78e-f63a-4b7c-befd-7cb5aa602766', 'deptName': '系统运维组', 'deptId': 'f8451745-5383-429e-92c5-247313304b3f', 'roleTypeList': ['4', '3', '2', '2', '2'], 'isFirstLogin': 'N', 'isPwdExpire': 'Y', 'lastLoginTime': '2025-10-30 09:51:53', 'groups': None, 'vendorId': None, 'limit': None, 'isLimit': None, 'jobLevel': None, 'extendS1': '0', 'isPwdStrength': None}}
+登录的Cookie AlteonPcgsh=Ax2NDK1mAwqscbFJj8p1RA$$; ZTESSCAUTH=31fcedff-5aa9-4313-9943-a4d88d961e37
+<!DOCTYPE html>
+<html style="overflow: hidden;">
+<head>
+    <meta charset="UTF-8">
+    <link href="/ureport/res/ureport-asserts/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <meta http-equiv="Cache-Control" content="no-siteapp"/>
+    <meta name="viewport" content="initial-scale=1, maximum-scale=3, minimum-scale=1, user-scalable=no">
+    <title>database:zfsboestatementvPage-ureport</title>
+    <style type="text/css" id="_ureport_table_style">
+        ._A1{width:164pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._B1{width:93pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._C1{width:119pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._D1{width:74pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._E1{width:89pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._F1{width:90pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._G1{width:132pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._H1{width:98pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._I1{width:74pt;text-align:center;vertical-align:middle;font-family:宋体;font-size:10pt;color:rgb(0,0,0);border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._J1{width:89pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._K1{width:95pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._L1{width:164pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._M1{width:101pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._N1{width:114pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._O1{width:74pt;text-align:center;vertical-align:middle;font-family:宋体;font-size:9pt;color:rgb(0,0,0);}._P1{width:88pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._Q1{width:85pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._R1{width:89pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._S1{width:74pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._T1{width:115pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._U1{width:152pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._V1{width:123pt;text-align:center;vertical-align:middle;font-family:宋体;font-size:9pt;color:rgb(0,0,0);}._W1{width:74pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._A2{width:164pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._B2{width:93pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._C2{width:119pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._D2{width:74pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._E2{width:89pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._F2{width:90pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._G2{width:132pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._H2{width:98pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._I2{width:74pt;text-align:center;vertical-align:middle;font-family:宋体;font-size:10pt;color:rgb(0,0,0);border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._J2{width:89pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._K2{width:95pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._L2{width:164pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._M2{width:101pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._N2{width:114pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._O2{width:74pt;text-align:center;vertical-align:middle;font-family:宋体;font-size:9pt;color:rgb(0,0,0);}._P2{width:88pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._Q2{width:85pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._R2{width:89pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._S2{width:74pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._T2{width:115pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._U2{width:152pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}._V2{width:123pt;text-align:center;vertical-align:middle;font-family:宋体;font-size:9pt;color:rgb(0,0,0);}._W2{width:74pt;text-align:center;vertical-align:middle;font-size:10pt;border-left:solid 1px rgb(0,0,0);border-right:solid 1px rgb(0,0,0);border-top:solid 1px rgb(0,0,0);border-bottom:solid 1px rgb(0,0,0);}
+    </style>
+    <style>
+        #_ureport_table tbody tr:nth-child(2n) {
+            background-color: #f7f7f7 !important;
+        }
+
+        #_ureport_table thead tr:nth-child(2n+1) {
+            background-color: #f7f7f7 !important;
+        }
+
+        /*#_ureport_table {*/
+        /*    width: 100%;*/
+        /*    overflow-x: auto;*/
+        /*    margin-bottom: 80px;*/
+        /*    overflow-y: hidden;*/
+        /*}*/
+
+        /*#_ureport_table table {*/
+        /*    min-width: 98%;*/
+        /*    height: 100%;*/
+        /*}*/
+
+        /*#_ureport_table table tbody {*/
+        /*    height: calc(100% - 32px);*/
+        /*    overflow-y: auto;*/
+        /*}*/
+
+
+    </style>
+    <script type="text/javascript" src="/ureport/res/ureport-asserts/venderjs/jquery.min.js"></script>
+    <script type="text/javascript" src="/ureport/res/ureport-asserts/venderjs/bootstrap.min.js"></script>
+    <script type="text/javascript"
+            src="/ureport/res/ureport-asserts/venderjs/Chart.bundle.min.js"></script>
+    <script type="text/javascript"
+            src="/ureport/res/ureport-asserts/venderjs/chartjs-plugin-datalabels.min.js"></script>
+    <script type="text/javascript"
+            src="/ureport/res/ureport-asserts/venderjs/bootstrap-datetimepicker.js"></script>
+    <script type="text/javascript" src="/ureport/res/ureport-asserts/js/preview.bundle.js"></script>
+</head>
+<body style="margin:5px">
+<form  style='margin-top:10px;margin-bottom:10px'></form>
+
+
+<!--add by 陈均高，加入分页-->
+
+<div id="_ureport_table" style="float:left">
+    <table border='0' style='margin:auto;border-collapse:collapse;width:2370pt'><tr style="height:28pt"><td class='_A1'  >单据编号</td><td class='_B1'  >单据类型</td><td class='_C1'  >单据日期</td><td class='_D1'  >审核完成时间</td><td class='_E1'  >提单人</td><td class='_F1'  >报账人</td><td class='_G1'  >报账部门</td><td class='_H1'  >单据状态</td><td class='_I1'  >影像状态</td><td class='_J1'  >付款状态</td><td class='_K1'  >当前处理人</td><td class='_L1'  >核算主体</td><td class='_M1'  >费用承担部门</td><td class='_N1'  >业务类型</td><td class='_O1'  >对方单位</td><td class='_P1'  >报账金额(本位币)</td><td class='_Q1'  >核销金额(本位币)</td><td class='_R1'  >付款金额(本位币)</td><td class='_S1'  >税金</td><td class='_T1'  >审核完成时间</td><td class='_U1'  >摘要</td><td class='_V1'  >付款用途</td><td class='_W1'  >支付金额</td></tr><tr style="height:25pt"><td class='_A2'  ><a href="/sys/report/ureport/zfsCustomReport/reportBillView?boeHeaderId=a68277af-7e67-4a19-915b-bb0616d2e898" target="_blank">SH-BX2510235921</a></td><td class='_B2'  >情况说明单</td><td class='_C2'  >2025-10-23&nbsp;13:49:23</td><td class='_D2'  >2025-10-23&nbsp;15:07:42</td><td class='_E2'  >杨莉</td><td class='_F2'  >杨莉</td><td class='_G2'  >新干线中华门营业部</td><td class='_H2'  >完成</td><td class='_I2'  >无需上传</td><td class='_J2'  >无需付款</td><td class='_K2'  >&nbsp;</td><td class='_L2'  >南京新干线物流有限公司</td><td class='_M2'  >新干线中华门营业部</td><td class='_N2'  >情况说明</td><td class='_O2'  >&nbsp;</td><td class='_P2'  >0</td><td class='_Q2'  >&nbsp;</td><td class='_R2'  >0</td><td class='_S2'  >0</td><td class='_T2'  >2025-10-23&nbsp;15:07:42</td><td class='_U2'  >&nbsp;</td><td class='_V2'  >&nbsp;</td><td class='_W2'  >&nbsp;</td></tr></table>
+</div>
+<iframe name="_print_frame" width="0" height="0" frameborder="0" src="about:blank"></iframe>
+<iframe name="_print_pdf_frame" width="0" height="0" frameborder="0" src="about:blank"></iframe>
+<script type="text/javascript">
+    window._server = "/ureport";
+    window.formElements = [];
+    $(document).ready(function () {
+
+        buildPaging(0, 0);
+
+
+            _buildChartDatas();
+
+        
+        function doSearch() {
+            submitSearchForm("database:zfsboestatementvPage.ureport.xml", "boeNo=SH-BX2510235921&requiredFlag=true");
+        }
+    });
+
+    $(function () {
+        // 设置表头固定
+        //setTableHeaderFixed();
+        // 设置无数据时的提示
+        // setNoDataTips();
+    });
+
+    /**
+     * 设置表头固定
+     */
+    function setTableHeaderFixed() {
+        var _tbodyObj = $("div#_ureport_table table tbody");
+        var _tableHeaderHtml = $(_tbodyObj).find("tr").first().html();
+        var _styleStr = $(_tbodyObj).find("tr").first().attr("style");
+        $(_tbodyObj).find("tr").first().remove();
+        $("div#_ureport_table table").prepend("<thead><tr style='" +
+            _styleStr +
+            "'>" + _tableHeaderHtml + "</tr></thead>"
+        );
+    }
+
+    /**
+     * 设置无数据时的提示
+     */
+    function setNoDataTips() {
+        var _tbodyObj = $("div#_ureport_table table tbody");
+        var _dataRows = $(_tbodyObj).find("tr").length;
+        var _dataCells = $(_tbodyObj).find("tr").last().find("td").length;
+        // 如果只有一行，说明有可能无数据
+        if (_dataRows == 1) {
+            // 是否无数据，默认无数据
+            var noDataFlag = true;
+            $(_tbodyObj).find("tr").last().find("td").each(function () {
+                // 只要有一列的值不为空则说明有数据
+                if ($(this).text().trim() != "") {
+                    noDataFlag = false;
+                    return false;
+                }
+            });
+            if (noDataFlag) {
+                // 为了保证字体样式，先获取第一行的样式
+                var _styleStr = $(_tbodyObj).find("tr").last().find("td").eq(0).attr("style");
+                var _classStr = $(_tbodyObj).find("tr").last().find("td").eq(0).attr("class");
+                // 没有数据时，将最后一行空白行删掉，并加上提示语
+                $(_tbodyObj).find("tr").last().remove();
+                $(_tbodyObj).append("<tr><td style='" + _styleStr + "' colspan='" + _dataCells + "' class='" + _classStr + "'>没有符合条件的数据</td></tr>");
+            }
+        }
+        $("html").css("height", "97%");
+    }
+</script>
+</body>
+</html>
+response {"msg":"success","code":0,"data":{"boeNo":"SH-ZJ2510299709","boeFormDto":{"zfsBoeWarnInfoDTOS":[],"boeHeader":[{"boeNo":"SH-ZJ2510299709","standardCurrency":"CNY","costClassification":"1","employeeDeptCode":"9999100200010001001099A100030001_WGXN01007","salaryMap":{},"validityFlag":"0","vendorCode":"913400007849134489","bktxt":"计划财务部杨孝俊/其他/计划财务部/皖赣铁路安徽公司合新铁路报销收款报账单","evsImgStatusName":"无需上传","employeeCompanyName":"皖赣铁路安徽公司合新铁路","boeTypeId":"bc54e05c-fca4-4025-e053-773e030ae2fa","boeDateStr":"2025-10-29 17:08:24","boeStatus":"25","eoriCount":1,"id":"d9c9bde6-dcfe-47d2-b9ad-177f06cffdab","standardCurrencyRate":1,"createByName":"杨孝俊","actDateStr":"2025-10-27","extendS15":"1","extendS10":"1","isCanDelete":"1","extendS13":"1","erpSyncStatus":"10","firstBoeDate":1761728904144,"expenseDeptCode":"9999100200010001001099A100030001_WGXN01007","nodeName":"共享中心","reimbursementMultipleFlag":"0","bpCount":0,"paymentCurrencyName":"人民币","leId":"5f61aa1b-9c11-4b77-9f44-7a75c46f0dec","firstBoeDateStr":"2025-10-29 17:08:24","industry":"5","enabledFlag":"0","employeeCode":"2101036538","operationTypeCode":"ZJ219","priorityLevel":0,"boeTypeName":"收款报账单","postName":"其他","billStatus":"007","leName":"皖赣铁路安徽公司合新铁路","createDate":1761726133675,"formTypeCode":"RECEIPT_BOE","industryName":"交通运输业","lastApproveLoginName":"2101176005","wfTaskId":"624576770","evsImgStatus":"UNNEED","invoiceAttNum":0,"employeeId":"76b33db0-aaa8-4579-9957-11808ee9da6b","boeAbstract":"电子汇入","boeStatusName":"待财务初审审批","standardCurrencyName":"人民币","sourceId":"PC","operationTypeId":"c5152f91-41be-4b9d-a1a5-b12a5db1ed26","lastUpdateDate":1761783443740,"groupId":"accba517-5725-4fae-8938-48946676bfc1","expenseDeptId":"d3b1cde0-0649-43fb-82af-5d5f9afbcfed","vendorId":"645a0e85-b1a9-400e-8425-067e87db3e51","createrCode":"2101036538","lastApprovalDate":1761783443740,"ccName":"计划财务部","employeeCompanyId":"ca5cb1f3-666b-4201-a41a-94fb0ae1ffbc","useCurrencyCode":"CNY^CNY","paperAccessories":"N","employeeDeptName":"计划财务部","eoriAppendCount":0,"expenseDeptName":"计划财务部","boeCategory":"RECEIPT_BOE","extendMap":{},"isImgSystem":"Y","processInstanceId":"624465398","employeeName":"杨孝俊/其他/计划财务部/皖赣铁路安徽公司合新铁路","extendS13Name":"运输业","employeeDeptId":"d3b1cde0-0649-43fb-82af-5d5f9afbcfed","formTypeId":"RECEIPT_BOE","postId":"3e22fb9e-ad42-4844-b1b6-005e59ffd06f","vendorName":"合武铁路有限公司","billStatusName":"无需投递","ccId":"51ab82b5-a8ce-4163-8942-ba100f2e5809","bpAppendCount":0,"paymentStatusName":"无需付款","boeDate":1761728904144,"postCode":"9999100200010001001099A100030001_WGXN01007_A999","paymentCurrency":"CNY","costClassificationName":"主营业务","sobCode":"2TY0000005","sobId":"67b3131d-0d72-4dd8-8322-2218ea357742","pageTemplateId":"bd9035ea-3893-413a-a97b-c1e0d18ead65","isCanRevoke":"1","applyAmount":5000000,"actDate":1761494400000,"standardCurrencyAmount":5000000,"boeClassify":"receivable","sourcePlatform":"CLAIM","paymentStatus":"0","applicableYear":"2025","operationTypeName":"基建收款","isWorkFlow":"0","ccCode":"2SH075770B-0004","createBy":"0f6b928d-5e93-4d15-b916-492739d217b5","isCanCopy":"1","boeTypeCode":"NEW_FUND_COLLECTION","largeAmountFlag":"N","leCode":"2SH075770B","paperAccessoriesName":"否","reimbursementEnabledFlag":"0","lastUpdateBy":"584cdae3-560f-4935-8b2b-b90c3cff6b9e"}],"other":[{"convertedAmount":5000000,"feeWithoutTax":5000000,"standardCurrency":"CNY","lastUpdateDate":"2025-10-29","leId":"5f61aa1b-9c11-4b77-9f44-7a75c46f0dec","taxMethod":"04","groupId":"accba517-5725-4fae-8938-48946676bfc1","engineeringProject":"2SH075770B-0001","sobId":"67b3131d-0d72-4dd8-8322-2218ea357742","validityFlag":"0","enabledFlag":"0","remark":"收合新项目贷款","ccName":"计划财务部","useCurrencyCode":"CNY","taxMethodName":"无","rateValue":1,"isGenVoucher":"0","expenseAmount":5000000,"boeLineId":"1d07b518-d7b7-4485-94cf-f9f2c3b849f3","standardCurrencyAmount":5000000,"boeLinesDistsDTO":[],"rdCode":"2SH075770B-0004","lineType":"other","id":"1d07b518-d7b7-4485-94cf-f9f2c3b849f3","leName":"皖赣铁路安徽公司合新铁路","createDate":"2025-10-29","standardCurrencyRate":1,"engineeringProjectName":"不需要","applicableYear":"2025","operationSubTypeCode":"ZJ219006","boeId":"d9c9bde6-dcfe-47d2-b9ad-177f06cffdab","claimId":"47f18e64-3286-499f-9d60-42a637fc25b6","operationSubTypeId":"e1ecb0e9-2b97-4c0d-ab50-efdc7d292375","useCurrencyName":"人民币","ccCode":"2SH075770B-0004","expenseDate":"2025-10-29 17:08:24","useCurrencyAmount":5000000,"createBy":"0f6b928d-5e93-4d15-b916-492739d217b5","rdName":"计划财务部","ccId":"51ab82b5-a8ce-4163-8942-ba100f2e5809","operationSubTypeName":"上级拨入投资借款-局自借款","lineNum":"0","_id":{"machineIdentifier":2344608,"processIdentifier":-17759,"counter":11732240,"timestamp":1761729774},"leCode":"2SH075770B","taxAmount":0,"lastUpdateBy":"0f6b928d-5e93-4d15-b916-492739d217b5"}],"zfsAttachmentDtos":[{"busId":"d9c9bde6-dcfe-47d2-b9ad-177f06cffdab","sAttaClassName":"银行单据类","lastUpdateDate":"2025-10-29 16:22:13","groupId":"accba517-5725-4fae-8938-48946676bfc1","createDateStr":"2025-10-29","validityFlag":"0","enabledFlag":"0","url":"M00/8C/07/CgQ2nmkAFoeAMcp9AABxWaZawag182.pdf","extendS1":"pdf","createBy":"0f6b928d-5e93-4d15-b916-492739d217b5","sizes":29017,"name":"电子回单340010800FZH28P3EVD","sAttaClassSource":"回单台账","id":"b4248835-d2c0-4fc4-bc11-51fcc744b0a1","createName":"杨孝俊","createDate":"2025-10-29 16:22:13","lastUpdateBy":"0f6b928d-5e93-4d15-b916-492739d217b5"}],"zfsBoeCalendarDTOS":[],"zfsBizAuditPointDTOS":[{"bizName":"上级拨入投资借款-局自借款","type":"1"},{"bizName":"基建收款","type":"0"}],"boeExpenseCavDTOs":[],"boeHeaderChild":[{"isInnerTradeName":"否","sourceId":"PC","vendorType":"002","boeNo":"SH-ZJ2510299709","applicableYear":"2025","bankSerialNum":"340010800FZH28P3EVD","creditRatingId":"ebe46448-a6e0-49e7-acb9-705d1c0e6869","lastUpdateDate":"2025-10-29 17:22:54","groupId":"accba517-5725-4fae-8938-48946676bfc1","validityFlag":"0","vendorId":"645a0e85-b1a9-400e-8425-067e87db3e51","enabledFlag":"0","boeId":"d9c9bde6-dcfe-47d2-b9ad-177f06cffdab","vendorName":"合武铁路有限公司","extendS2":"47f18e64-3286-499f-9d60-42a637fc25b6","vendorCode":"913400007849134489","createBy":"0f6b928d-5e93-4d15-b916-492739d217b5","extendMap":{},"id":"34f88aac-0fa8-428f-8018-4dc135a74251","isInnerTrade":"1","createDate":"2025-10-29 16:22:13","lastUpdateBy":"0f6b928d-5e93-4d15-b916-492739d217b5"}],"zfsBoeAgainstInfos":[],"boePersonalInfo":[],"boeTemplates":[],"invoiceDTOS":[],"wfHisTaskVDTOs":[],"zfsBoeLines":[{"convertedAmount":5000000,"feeWithoutTax":5000000,"standardCurrency":"CNY","lastUpdateDate":"2025-10-29 17:22:54","leId":"5f61aa1b-9c11-4b77-9f44-7a75c46f0dec","taxMethod":"04","groupId":"accba517-5725-4fae-8938-48946676bfc1","engineeringProject":"2SH075770B-0001","sobId":"67b3131d-0d72-4dd8-8322-2218ea357742","validityFlag":"0","enabledFlag":"0","remark":"收合新项目贷款","ccName":"计划财务部","useCurrencyCode":"CNY","taxMethodName":"无","rateValue":1,"isGenVoucher":"0","expenseAmount":5000000,"standardCurrencyAmount":5000000,"boeLinesDistsDTO":[],"rdCode":"2SH075770B-0004","extendMap":{"boeLineId":"1d07b518-d7b7-4485-94cf-f9f2c3b849f3","feeWithoutTax":5000000,"_id":{"date":"2025-10-29 17:22:54","machineIdentifier":2344608,"counter":11732240,"processIdentifier":-17759,"time":1761729774000,"timeSecond":1761729774,"timestamp":1761729774}},"lineType":"other","id":"1d07b518-d7b7-4485-94cf-f9f2c3b849f3","leName":"皖赣铁路安徽公司合新铁路","createDate":"2025-10-29 00:00:00","standardCurrencyRate":1,"engineeringProjectName":"不需要","applicableYear":"2025","operationSubTypeCode":"ZJ219006","boeId":"d9c9bde6-dcfe-47d2-b9ad-177f06cffdab","claimId":"47f18e64-3286-499f-9d60-42a637fc25b6","operationSubTypeId":"e1ecb0e9-2b97-4c0d-ab50-efdc7d292375","useCurrencyName":"人民币","ccCode":"2SH075770B-0004","expenseDate":"2025-10-29 17:08:24","useCurrencyAmount":5000000,"createBy":"0f6b928d-5e93-4d15-b916-492739d217b5","rdName":"计划财务部","ccId":"51ab82b5-a8ce-4163-8942-ba100f2e5809","operationSubTypeName":"上级拨入投资借款-局自借款","lineNum":"0","leCode":"2SH075770B","taxAmount":0,"lastUpdateBy":"0f6b928d-5e93-4d15-b916-492739d217b5"}],"zfsBoePayments":[{"vendorType":"002","paymentAccountId":"73157224-3bf9-499d-8d2e-9560776ecb42","vendorCodeName":"合武铁路有限公司","paymentCurrencyName":"人民币","vendorAccountName":"合武铁路有限公司/34050148860800003297","lastUpdateDate":"2025-10-29 17:22:54","bankBranchName":"建设银行合肥钟楼支行","groupId":"accba517-5725-4fae-8938-48946676bfc1","engineeringProject":"2SH075770B-0001","validityFlag":"0","vendorId":"645a0e85-b1a9-400e-8425-067e87db3e51","enabledFlag":"0","ccName":"计划财务部","payer":"皖赣铁路安徽有限责任公司","paymentAmount":5000000,"payerBankUnitedCode":"105361048010","vendorCode":"913400007849134489","paymentModeCode":"B_07","standardCurrencyAmount":5000000,"extendS9":"合新铁路项目建设","id":"3c4b6413-2fac-405a-8137-1216c7525895","bankAccountNum":"34050148860800003297","paymentStatus":"6","createDate":"2025-10-29 00:00:00","standardCurrencyRate":1,"bankAccountName":"皖赣铁路安徽有限责任公司","engineeringProjectName":"不需要","applicableYear":"2025","paymentCurrencyCode":"CNY","bankUnitedCode":"105361048010","boeId":"d9c9bde6-dcfe-47d2-b9ad-177f06cffdab","transactionDate":"2025-10-27 00:00:00","vendorName":"合武铁路有限公司","ccCode":"2SH075770B-0004","useCurrencyAmount":5000000,"createBy":"0f6b928d-5e93-4d15-b916-492739d217b5","ccId":"51ab82b5-a8ce-4163-8942-ba100f2e5809","paymentProperty":"001","bankAccountId":"73157224-3bf9-499d-8d2e-9560776ecb42","paymentAccountKmCode":"1002-2-1","paymentAccount":"34050148860800003297","lastUpdateBy":"0f6b928d-5e93-4d15-b916-492739d217b5","paymentModeName":"银行收款"}],"zfsBoeSumAmounts":{"cancelPrepaymentAmount":0,"lastUpdateDate":"2025-10-29 17:22:54","groupId":"accba517-5725-4fae-8938-48946676bfc1","validityFlag":"0         ","enabledFlag":"0         ","boeId":"d9c9bde6-dcfe-47d2-b9ad-177f06cffdab","paymentAmount":5000000,"applyAmount":5000000,"createBy":"0f6b928d-5e93-4d15-b916-492739d217b5","bizTravelAmount":0,"id":"28bf54f7-61e5-4b03-b956-45554957f2ad","createDate":"2025-10-29 16:22:13","lastUpdateBy":"0f6b928d-5e93-4d15-b916-492739d217b5"}},"boeHeaderId":"d9c9bde6-dcfe-47d2-b9ad-177f06cffdab","otherData":{},"boeTypeName":"收款报账单","metaDataConfigDto":{"phaseConfigs":{}},"zfsBoeUpdateHiss":[]},"type":"INFO"}
+
+Process finished with exit code 0

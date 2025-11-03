@@ -1,4 +1,3 @@
-import csv
 import json
 import logging
 import time
@@ -6,6 +5,7 @@ from typing import Dict, Optional
 
 import requests
 from requests.utils import dict_from_cookiejar
+from database.database_manager import DataBaseManager
 
 # 配置日志
 logging.basicConfig(
@@ -21,16 +21,18 @@ logger = logging.getLogger(__name__)
 
 class OrgCrawler:
     """组织架构爬取器"""
-    
-    def __init__(self, base_url: str = "http://10.3.102.173", login_key: str = "10030", password: str = "PhhLGbYaZgsvNKJ2YjHF3A=="):
+
+    def __init__(self, base_url: str = "http://10.3.102.173", login_key: str = "10030",
+                 password: str = "PhhLGbYaZgsvNKJ2YjHF3A=="):
         self.base_url = base_url
         self.login_key = login_key
         self.password = password
         self.session = requests.Session()
         self.departments = []  # 存储所有部门信息
-        self.employees = []    # 存储所有人员信息
+        self.employees = []  # 存储所有人员信息
         self.visited_depts = set()  # 避免重复访问
-        
+        self.db_manager = DataBaseManager()  # 数据库管理器
+
         # 设置请求头
         self.headers = {
             "Connection": "keep-alive",
@@ -42,10 +44,10 @@ class OrgCrawler:
             "Referer": f"{base_url}/",
             "Cookie": ""
         }
-        
+
         # 认证信息，将通过登录获取
         self.authkey = None
-        
+
     def login(self) -> bool:
         """
         登录系统获取认证信息
@@ -54,51 +56,46 @@ class OrgCrawler:
             bool: 登录成功返回True，失败返回False
         """
         login_url = f"{self.base_url}/sys/auth/login"
-        
+
         # 准备登录数据
         login_data = {
             "loginKey": self.login_key,
             "password": self.password
         }
-        
+
         # 设置登录请求头
         login_headers = {
             "Connection": "keep-alive",
             "Accept": "application/json, text/plain, */*",
             "Accept-Language": "zh-CN",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/97.0.4692.71 Safari/537.36",
             "Referer": f"{self.base_url}/",
             "Content-Type": "application/x-www-form-urlencoded"
         }
-        
+
         try:
             logger.info(f"正在尝试登录，用户名: {self.login_key}")
             response = self.session.post(login_url, headers=login_headers, data=login_data, verify=False, timeout=30)
             response.raise_for_status()
-            
+
             result = response.json()
-            
+            print(result)
             if result.get("code") == 0:
                 # 登录成功，获取认证信息
-                data = result.get("data", {})
-                self.authkey = data.get("authkey")
-                
-                if self.authkey:
-                    logger.info("登录成功，已获取认证密钥")
-                    
-                    # 更新请求头中的Cookie
-                    cookies = dict_from_cookiejar(self.session.cookies)
-                    cookie_str = "; ".join([f"{k}={v}" for k, v in cookies.items()])
-                    self.headers["Cookie"] = cookie_str
-                    
-                    return True
-                else:
-                    logger.error("登录成功但未获取到认证密钥")
-                    return False
+                self.authkey = "PiK0iSYIrs559DnX1Wcr3UOaWIKk0hNd5yhIaknVf7DGSVuPJUJpFZ9tRsS0ZUdB"
+
+                # 更新请求头中的Cookie
+                cookies = dict_from_cookiejar(self.session.cookies)
+                cookie_str = "; ".join([f"{k}={v}" for k, v in cookies.items()])
+                self.headers["Cookie"] = cookie_str
+
+                return True
             else:
                 logger.error(f"登录失败: {result.get('msg', '未知错误')}")
+
                 return False
-                
+
         except requests.exceptions.RequestException as e:
             logger.error(f"登录请求失败: {e}")
             return False
@@ -108,16 +105,16 @@ class OrgCrawler:
         except Exception as e:
             logger.error(f"登录过程中发生未知错误: {e}")
             return False
-    
+
     def update_authkey(self, new_authkey: str):
         """更新认证密钥"""
         self.authkey = new_authkey
         logger.info("认证密钥已更新")
-    
+
     def is_logged_in(self) -> bool:
         """检查是否已登录"""
         return self.authkey is not None
-    
+
     def get_children_by_id(self, dept_id: str) -> Optional[Dict]:
         """
         获取指定部门ID下的子部门
@@ -130,28 +127,28 @@ class OrgCrawler:
         """
         url = f"{self.base_url}/sys/common/dept/findChildrenById/{dept_id}"
         params = {"time": int(time.time())}
-        
+
         headers = self.headers.copy()
         headers["authkey"] = self.authkey
-        
+
         try:
             response = self.session.get(url, headers=headers, params=params, verify=False, timeout=30)
             response.raise_for_status()
-            
+
             data = response.json()
             if data.get("code") == 0:
                 return data
             else:
                 logger.error(f"获取部门 {dept_id} 失败: {data.get('msg', '未知错误')}")
                 return None
-                
+
         except requests.exceptions.RequestException as e:
             logger.error(f"请求部门 {dept_id} 时发生错误: {e}")
             return None
         except json.JSONDecodeError as e:
             logger.error(f"解析部门 {dept_id} 响应JSON失败: {e}")
             return None
-    
+
     def find_shanghai_railway_id(self, root_data: Dict) -> Optional[str]:
         """
         从根部门数据中查找上海铁路的部门ID
@@ -167,15 +164,15 @@ class OrgCrawler:
             dept_info = dept.get("obj", {})
             dept_name = dept_info.get("name", "")
             dept_id = dept_info.get("id")
-            
+
             # 查找包含"上海铁路"的部门
             if "上海铁路" in dept_name:
                 logger.info(f"找到上海铁路部门: {dept_name} (ID: {dept_id})")
                 return dept_id
-        
+
         logger.warning("未找到上海铁路部门")
         return None
-    
+
     def get_dept_page(self, parent_id: str, page: int = 1, limit: int = 100) -> Optional[Dict]:
         """
         分页获取部门信息（包含人员）
@@ -189,13 +186,13 @@ class OrgCrawler:
             包含分页数据的字典，失败返回None
         """
         url = f"{self.base_url}/sys/common/dept/page"
-        
+
         headers = self.headers.copy()
         headers.update({
             "Content-Type": "application/x-www-form-urlencoded",
             "authkey": self.authkey
         })
-        
+
         data = {
             "page": page,
             "limit": limit,
@@ -203,25 +200,25 @@ class OrgCrawler:
             "order": "",
             "pid": parent_id
         }
-        
+
         try:
             response = self.session.post(url, headers=headers, data=data, verify=False, timeout=30)
             response.raise_for_status()
-            
+
             result = response.json()
             if result.get("code") == 0:
                 return result
             else:
                 logger.error(f"获取部门 {parent_id} 分页数据失败: {result.get('msg', '未知错误')}")
                 return None
-                
+
         except requests.exceptions.RequestException as e:
             logger.error(f"请求部门 {parent_id} 分页数据时发生错误: {e}")
             return None
         except json.JSONDecodeError as e:
             logger.error(f"解析部门 {parent_id} 分页响应JSON失败: {e}")
             return None
-    
+
     def crawl_departments_recursive(self, dept_id: str = "0", level: int = 0):
         """
         递归爬取所有部门信息
@@ -232,24 +229,24 @@ class OrgCrawler:
         """
         if dept_id in self.visited_depts:
             return
-        
+
         self.visited_depts.add(dept_id)
         indent = "  " * level
-        
+
         logger.info(f"{indent}正在获取部门 {dept_id} 的信息...")
-        
+
         # 获取子部门
         children_data = self.get_children_by_id(dept_id)
         if not children_data:
             return
-        
+
         tree = children_data.get("tree", [])
         for dept in tree:
             dept_info = dept.get("obj", {})
             dept_id_current = dept_info.get("id")
             dept_name = dept_info.get("name", "未知部门")
             dept_type = dept_info.get("typeName", "未知类型")
-            
+
             # 存储部门信息
             department = {
                 "id": dept_id_current,
@@ -269,20 +266,20 @@ class OrgCrawler:
                 "leader_id": dept_info.get("leaderId", ""),
                 "remark": dept_info.get("remark", "")
             }
-            
+
             self.departments.append(department)
             logger.info(f"{indent}  - {dept_name} ({dept_type})")
-            
+
             # 如果不是叶子节点，继续递归
             if not dept.get("leaf", True):
                 self.crawl_departments_recursive(dept_id_current, level + 1)
-            
+
             # 获取该部门下的人员信息
             self.crawl_employees_in_dept(dept_id_current, level + 1)
-            
+
             # 添加延迟避免请求过快
             time.sleep(0.5)
-    
+
     def crawl_employees_in_dept(self, dept_id: str, level: int = 0):
         """
         获取指定部门下的人员信息
@@ -294,20 +291,20 @@ class OrgCrawler:
         indent = "  " * level
         page = 1
         limit = 100
-        
+
         while True:
             logger.info(f"{indent}正在获取部门 {dept_id} 第 {page} 页人员信息...")
-            
+
             page_data = self.get_dept_page(dept_id, page, limit)
             if not page_data:
                 break
-            
+
             page_info = page_data.get("page", {})
             dept_list = page_info.get("list", [])
-            
+
             if not dept_list:
                 break
-            
+
             for item in dept_list:
                 # 只处理人员类型的数据
                 if item.get("type") == "3" and item.get("typeName") == "人员":
@@ -331,74 +328,39 @@ class OrgCrawler:
                         "leader_name": item.get("leaderName", ""),
                         "remark": item.get("remark", "")
                     }
-                    
+
                     self.employees.append(employee)
                     logger.info(f"{indent}  - 人员: {employee['name']} ({employee['code']})")
-            
+
             # 检查是否还有下一页
             total_pages = page_info.get("totalPage", 1)
             if page >= total_pages:
                 break
-            
+
             page += 1
             time.sleep(0.5)  # 添加延迟
-    
-    def export_to_json(self, filename: str = "org_data.json"):
-        """导出数据到JSON文件"""
-        data = {
-            "departments": self.departments,
-            "employees": self.employees,
-            "summary": {
-                "total_departments": len(self.departments),
-                "total_employees": len(self.employees),
-                "export_time": time.strftime("%Y-%m-%d %H:%M:%S")
-            }
-        }
-        
-        with open(filename, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        
-        logger.info(f"数据已导出到 {filename}")
-    
-    def export_to_csv(self, dept_filename: str = "departments.csv", emp_filename: str = "employees.csv"):
-        """导出数据到CSV文件"""
-        # 导出部门数据
-        if self.departments:
-            with open(dept_filename, 'w', newline='', encoding='utf-8-sig') as f:
-                writer = csv.DictWriter(f, fieldnames=self.departments[0].keys())
-                writer.writeheader()
-                writer.writerows(self.departments)
-            logger.info(f"部门数据已导出到 {dept_filename}")
-        
-        # 导出人员数据
-        if self.employees:
-            with open(emp_filename, 'w', newline='', encoding='utf-8-sig') as f:
-                writer = csv.DictWriter(f, fieldnames=self.employees[0].keys())
-                writer.writeheader()
-                writer.writerows(self.employees)
-            logger.info(f"人员数据已导出到 {emp_filename}")
-    
+
     def run(self, start_dept_id: str = "0"):
         """运行爬取任务"""
         logger.info("开始爬取组织架构和人员信息...")
         logger.info(f"起始部门ID: {start_dept_id}")
-        
+
         start_time = time.time()
-        
+
         try:
             # 首先进行登录
             logger.info("正在登录系统...")
             if not self.login():
                 logger.error("登录失败，无法继续爬取")
                 return
-            
+
             # 获取根部门信息，找到上海铁路的ID
             logger.info("正在获取根部门信息...")
             root_data = self.get_children_by_id(start_dept_id)
             if not root_data:
                 logger.error("无法获取根部门信息")
                 return
-            
+
             # 查找上海铁路的部门ID
             shanghai_railway_id = self.find_shanghai_railway_id(root_data)
             if shanghai_railway_id:
@@ -408,19 +370,30 @@ class OrgCrawler:
             else:
                 logger.warning("未找到上海铁路部门，从根部门开始爬取")
                 self.crawl_departments_recursive(start_dept_id)
-            
-            # 导出数据
-            self.export_to_json()
-            self.export_to_csv()
-            
+
+            # 写入数据库
+            if self.employees:
+                logger.info(f"开始将 {len(self.employees)} 条员工数据写入数据库...")
+                success = self.db_manager.auto_create_and_save_data(
+                    self.employees,
+                    "raw_organize",
+                    if_exists='append'
+                )
+                if success:
+                    logger.info(f"成功将 {len(self.employees)} 条员工数据写入数据库表 raw_organize")
+                else:
+                    logger.error("写入员工数据到数据库失败")
+            else:
+                logger.warning("没有员工数据需要写入数据库")
+
             end_time = time.time()
             duration = end_time - start_time
-            
+
             logger.info(f"爬取完成！")
             logger.info(f"共获取 {len(self.departments)} 个部门")
             logger.info(f"共获取 {len(self.employees)} 个人员")
             logger.info(f"耗时: {duration:.2f} 秒")
-            
+
         except KeyboardInterrupt:
             logger.info("用户中断了爬取过程")
         except Exception as e:
@@ -432,16 +405,7 @@ def main():
     """主函数"""
     # 创建爬取器实例
     crawler = OrgCrawler()
-    
-    # 测试登录
-    logger.info("测试登录功能...")
-    if crawler.login():
-        logger.info("登录测试成功！")
-        logger.info(f"认证密钥: {crawler.authkey[:20]}..." if crawler.authkey else "未获取到认证密钥")
-    else:
-        logger.error("登录测试失败！")
-        return
-    
+
     # 运行爬取任务
     crawler.run()
 

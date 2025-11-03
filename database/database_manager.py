@@ -76,8 +76,8 @@ class DataBaseManager:
             return None
 
     def _generate_column_definition(self, dtype, column_data=None, column_name=None) -> str:
-        # 如果字段名为REPORTS，强制使用CLOB类型
-        if column_name and column_name.upper() == 'REPORTS':
+        # 如果字段名为REPORTS、REPORT或RAW_DATA，强制使用CLOB类型
+        if column_name and column_name.upper() in ['REPORTS', 'REPORT', 'RAW_DATA']:
             return "CLOB"
         if pd.api.types.is_integer_dtype(dtype):
             return "NUMBER(19)"
@@ -185,6 +185,9 @@ class DataBaseManager:
                 continue
             column_data = df[raw_name]
             column_def = f'"{clean_unique}" {self._generate_column_definition(dtype, column_data, raw_name)}'
+            # 如果 id 字段存在且不是自增的，将其设为主键
+            if clean_unique == 'ID' and has_id:
+                column_def += ' PRIMARY KEY'
             columns.append(column_def)
 
         columns_sql = ",\n  ".join(columns)
