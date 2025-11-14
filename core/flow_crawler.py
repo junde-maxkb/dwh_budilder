@@ -3,9 +3,7 @@ import logging
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
-import requests
-from requests.utils import dict_from_cookiejar
-
+from api.api_client import UnifiedLoginClient, FlowAPIClient
 from database.database_manager import DataBaseManager
 
 logging.basicConfig(
@@ -38,26 +36,18 @@ class FlowCrawler:
         self.page_size = page_size
         self.request_timeout = request_timeout
 
-        self.session = requests.Session()
-        self.authkey: Optional[str] = None
-
-        # headers 在登录后补充 Cookie 和 authkey
-        self.headers = {
-            "Connection": "keep-alive",
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "zh-CN",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                          "Chrome/97.0.4692.71 Safari/537.36",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Origin": self.base_url,
-            "Referer": f"{self.base_url}/claim/",
-            "pageUri": "#/account",
-        }
-
         self.target_table = "raw_capital_flows"
         
         # 初始化数据库管理器
         self.db_manager = DataBaseManager()
+        
+        # 使用统一的登录客户端和API客户端
+        self.login_client = UnifiedLoginClient(base_url, login_key, password)
+        self.api_client = FlowAPIClient(self.login_client, page_size, request_timeout)
+        
+        # 保持向后兼容
+        self.session = self.login_client.get_session()
+        self.authkey: Optional[str] = None  # 将在登录后设置
 
     # --------------------- 认证 ---------------------
     def login(self) -> bool:
@@ -67,55 +57,10 @@ class FlowCrawler:
         Returns:
             bool: 登录成功返回True，失败返回False
         """
-        login_url = f"{self.base_url}/sys/auth/login"
-
-        # 准备登录数据
-        login_data = {
-            "loginKey": self.login_key,
-            "password": self.password
-        }
-
-        # 设置登录请求头
-        login_headers = {
-            "Connection": "keep-alive",
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "zh-CN",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                          "Chrome/97.0.4692.71 Safari/537.36",
-            "Referer": f"{self.base_url}/",
-            "Content-Type": "application/x-www-form-urlencoded"
-        }
-
-        try:
-            logger.info(f"正在尝试登录，用户名: {self.login_key}")
-            response = self.session.post(login_url, headers=login_headers, data=login_data, verify=False, timeout=300)
-            response.raise_for_status()
-
-            result = response.json()
-
-            if result.get("code") == 0:
-                # 登录成功，设置默认的管理员认证信息
-                self.authkey = "PiK0iSYIrs559DnX1Wcr3UOaWIKk0hNd5yhIaknVf7DGSVuPJUJpFZ9tRsS0ZUdB"
-
-                # 更新请求头中的Cookie
-                cookies = dict_from_cookiejar(self.session.cookies)
-                cookie_str = "; ".join([f"{k}={v}" for k, v in cookies.items()])
-                self.headers["Cookie"] = cookie_str
-
-                return True
-            else:
-                logger.error(f"登录失败: {result.get('msg', '未知错误')}")
-                return False
-
-        except requests.exceptions.RequestException as e:
-            logger.error(f"登录请求失败: {e}")
-            return False
-        except json.JSONDecodeError as e:
-            logger.error(f"解析登录响应JSON失败: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"登录过程中发生未知错误: {e}")
-            return False
+        success = self.login_client.login()
+        if success:
+            self.authkey = self.login_client.get_authkey()
+        return success
 
     # --------------------- 拉取分页 ---------------------
     def _fetch_page(self, page_index: int) -> Tuple[int, int, List[Dict]]:
@@ -123,37 +68,7 @@ class FlowCrawler:
 
         返回: (currPage, totalPage, list)
         """
-        assert self.authkey, "未登录，无 authkey"
-
-        url = f"{self.base_url}/sys/claim/claimcapitalflow/page"
-        headers = self.headers.copy()
-        headers["authkey"] = self.authkey
-
-        form = {
-            "page": str(page_index),
-            "limit": str(self.page_size),
-            "orderField": "",
-            "order": "",
-            "menuType": "0",
-        }
-
-        resp = self.session.post(
-            url,
-            headers=headers,
-            data=form,
-            timeout=self.request_timeout,
-            verify=False,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        if data.get("code") != 0:
-            raise RuntimeError(f"接口返回异常: {data}")
-
-        page_info = data.get("page", {})
-        curr = int(page_info.get("currPage", 1))
-        total = int(page_info.get("totalPage", 1))
-        items = page_info.get("list", []) or []
-        return curr, total, items
+        return self.api_client.fetch_page(page_index)
 
     def _load_existing_keys(self) -> Tuple[set, str]:
         """优先使用 lsmxId 作为业务唯一键，其次 id。返回(已存在集合, 使用的列名)。"""

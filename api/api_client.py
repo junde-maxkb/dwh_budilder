@@ -1,8 +1,9 @@
 import json
-import requests
-import time
 import re
+import time
 from typing import Dict, List, Optional, Any, Tuple
+
+import requests
 from fake_useragent import UserAgent
 from loguru import logger
 from pydantic import BaseModel
@@ -686,3 +687,614 @@ class AutoFinancialReportAPI:
 
 def create_auto_financial_api(username: str, password: str) -> AutoFinancialReportAPI:
     return AutoFinancialReportAPI(username, password)
+
+
+# ==================== 统一的登录客户端 ====================
+class UnifiedLoginClient:
+    """统一的登录客户端，用于组织架构、资金流水、报账单等系统的登录"""
+
+    def __init__(self, base_url: str = "http://10.3.102.173", login_key: str = "10030",
+                 password: str = "PhhLGbYaZgsvNKJ2YjHF3A=="):
+        self.base_url = base_url.rstrip('/')
+        self.login_key = login_key
+        self.password = password
+        self.session = requests.Session()
+        self.authkey: Optional[str] = None
+
+        # 设置基础请求头
+        self.headers = {
+            "Connection": "keep-alive",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "zh-CN",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/97.0.4692.71 Safari/537.36",
+            "Referer": f"{self.base_url}/",
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+
+    def login(self) -> bool:
+        """
+        登录系统获取认证信息
+        
+        Returns:
+            bool: 登录成功返回True，失败返回False
+        """
+        login_url = f"{self.base_url}/sys/auth/login"
+
+        login_data = {
+            "loginKey": self.login_key,
+            "password": self.password
+        }
+
+        try:
+            logger.info(f"正在尝试登录，用户名: {self.login_key}")
+            response = self.session.post(login_url, headers=self.headers, data=login_data, verify=False, timeout=30)
+            response.raise_for_status()
+
+            result = response.json()
+            if result.get("code") == 0:
+                # 登录成功，设置默认的管理员认证信息
+                self.authkey = "PiK0iSYIrs559DnX1Wcr3UOaWIKk0hNd5yhIaknVf7DGSVuPJUJpFZ9tRsS0ZUdB"
+
+                # 更新请求头中的Cookie
+                from requests.utils import dict_from_cookiejar
+                cookies = dict_from_cookiejar(self.session.cookies)
+                cookie_str = "; ".join([f"{k}={v}" for k, v in cookies.items()])
+                self.headers["Cookie"] = cookie_str
+
+                logger.info("登录成功")
+                return True
+            else:
+                logger.error(f"登录失败: {result.get('msg', '未知错误')}")
+                return False
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"登录请求失败: {e}")
+            return False
+        except json.JSONDecodeError as e:
+            logger.error(f"解析登录响应JSON失败: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"登录过程中发生未知错误: {e}")
+            return False
+
+    def is_logged_in(self) -> bool:
+        """检查是否已登录"""
+        return self.authkey is not None
+
+    def get_authkey(self) -> Optional[str]:
+        """获取认证密钥"""
+        return self.authkey
+
+    def get_session(self) -> requests.Session:
+        """获取会话对象"""
+        return self.session
+
+    def get_headers(self) -> Dict[str, str]:
+        """获取请求头"""
+        return self.headers.copy()
+
+
+# ==================== 组织架构API客户端 ====================
+class OrgAPIClient:
+    """组织架构API客户端"""
+
+    def __init__(self, login_client: UnifiedLoginClient):
+        self.login_client = login_client
+        self.base_url = login_client.base_url
+
+    def get_children_by_id(self, dept_id: str) -> Optional[Dict]:
+        """
+        获取指定部门ID下的子部门
+        
+        Args:
+            dept_id: 部门ID，0表示根部门
+            
+        Returns:
+            包含子部门信息的字典，失败返回None
+        """
+        if not self.login_client.is_logged_in():
+            raise ValueError("未登录，请先调用login_client.login()")
+
+        url = f"{self.base_url}/sys/common/dept/findChildrenById/{dept_id}"
+        params = {"time": int(time.time())}
+
+        headers = self.login_client.get_headers()
+        headers["authkey"] = self.login_client.get_authkey()
+
+        try:
+            response = self.login_client.get_session().get(url, headers=headers, params=params, verify=False,
+                                                           timeout=30)
+            response.raise_for_status()
+
+            data = response.json()
+            if data.get("code") == 0:
+                return data
+            else:
+                logger.error(f"获取部门 {dept_id} 失败: {data.get('msg', '未知错误')}")
+                return None
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"请求部门 {dept_id} 时发生错误: {e}")
+            return None
+        except json.JSONDecodeError as e:
+            logger.error(f"解析部门 {dept_id} 响应JSON失败: {e}")
+            return None
+
+    def get_dept_page(self, parent_id: str, page: int = 1, limit: int = 100) -> Optional[Dict]:
+        """
+        分页获取部门信息（包含人员）
+        
+        Args:
+            parent_id: 父部门ID
+            page: 页码
+            limit: 每页数量
+            
+        Returns:
+            包含分页数据的字典，失败返回None
+        """
+        if not self.login_client.is_logged_in():
+            raise ValueError("未登录，请先调用login_client.login()")
+
+        url = f"{self.base_url}/sys/common/dept/page"
+
+        headers = self.login_client.get_headers()
+        headers.update({
+            "Content-Type": "application/x-www-form-urlencoded",
+            "authkey": self.login_client.get_authkey()
+        })
+
+        data = {
+            "page": page,
+            "limit": limit,
+            "orderField": "",
+            "order": "",
+            "pid": parent_id
+        }
+
+        try:
+            response = self.login_client.get_session().post(url, headers=headers, data=data, verify=False, timeout=30)
+            response.raise_for_status()
+
+            result = response.json()
+            if result.get("code") == 0:
+                return result
+            else:
+                logger.error(f"获取部门 {parent_id} 分页数据失败: {result.get('msg', '未知错误')}")
+                return None
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"请求部门 {parent_id} 分页数据时发生错误: {e}")
+            return None
+        except json.JSONDecodeError as e:
+            logger.error(f"解析部门 {parent_id} 分页响应JSON失败: {e}")
+            return None
+
+
+# ==================== 资金流水API客户端 ====================
+class FlowAPIClient:
+    """资金流水API客户端"""
+
+    def __init__(self, login_client: UnifiedLoginClient, page_size: int = 100, request_timeout: int = 30):
+        self.login_client = login_client
+        self.base_url = login_client.base_url
+        self.page_size = page_size
+        self.request_timeout = request_timeout
+
+    def fetch_page(self, page_index: int) -> Tuple[int, int, List[Dict]]:
+        """
+        拉取单页数据
+        
+        Args:
+            page_index: 页码
+            
+        Returns:
+            (currPage, totalPage, list)
+        """
+        if not self.login_client.is_logged_in():
+            raise ValueError("未登录，请先调用login_client.login()")
+
+        url = f"{self.base_url}/sys/claim/claimcapitalflow/page"
+        headers = self.login_client.get_headers()
+        headers["authkey"] = self.login_client.get_authkey()
+
+        form = {
+            "page": str(page_index),
+            "limit": str(self.page_size),
+            "orderField": "",
+            "order": "",
+            "menuType": "0",
+        }
+
+        try:
+            resp = self.login_client.get_session().post(
+                url,
+                headers=headers,
+                data=form,
+                timeout=self.request_timeout,
+                verify=False,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            if data.get("code") != 0:
+                raise RuntimeError(f"接口返回异常: {data}")
+
+            page_info = data.get("page", {})
+            curr = int(page_info.get("currPage", 1))
+            total = int(page_info.get("totalPage", 1))
+            items = page_info.get("list", []) or []
+            return curr, total, items
+        except Exception as e:
+            logger.error(f"获取资金流水第 {page_index} 页数据失败: {e}")
+            raise
+
+
+# ==================== 报账单API客户端 ====================
+class BoeAPIClient:
+    """报账单API客户端"""
+
+    def __init__(self, login_client: UnifiedLoginClient):
+        self.login_client = login_client
+        self.base_url = login_client.base_url
+
+    def get_query_fields(self, report_code: str = "zfsboestatementvPage.ureport.xml") -> Optional[Dict]:
+        """
+        获取报表查询字段信息
+        
+        Args:
+            report_code: 报表代码
+            
+        Returns:
+            包含查询字段信息的字典，失败返回None
+        """
+        if not self.login_client.is_logged_in():
+            raise ValueError("未登录，请先调用login_client.login()")
+
+        url = f"{self.base_url}/sys/report/reportmanager/findReportWithQueryFieldByCode"
+        params = {"reportCode": report_code}
+
+        headers = self.login_client.get_headers()
+        headers.update({
+            "pageUri": f"#/reportDetail?reportCode={report_code}",
+            "authkey": self.login_client.get_authkey(),
+            "x-frame-options": "allow-from http://10.3.92.33/finebi/decision/link/CCga",
+            "Origin": self.base_url,
+            "Referer": f"{self.base_url}/report/"
+        })
+
+        try:
+            logger.info(f"正在获取报表查询字段信息: {report_code}")
+            response = self.login_client.get_session().post(url, headers=headers, params=params, verify=False,
+                                                            timeout=30)
+            response.raise_for_status()
+
+            data = response.json()
+            if data.get("code") == 0:
+                logger.info(f"成功获取查询字段信息")
+                return data
+            else:
+                logger.error(f"获取查询字段失败: {data.get('msg', '未知错误')}")
+                return None
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"请求查询字段时发生错误: {e}")
+            return None
+        except json.JSONDecodeError as e:
+            logger.error(f"解析查询字段响应JSON失败: {e}")
+            return None
+
+    def get_report_data(self, start_date: str = None, end_date: str = None, page_size: int = 100, page: int = 1,
+                        report_code: str = "zfsboestatementvPage.ureport.xml") -> Optional[Dict]:
+        """
+        获取报表数据
+        
+        Args:
+            start_date: 开始日期，格式：2025-7-19 00:00:00
+            end_date: 结束日期，格式：2025-10-16 23:59:59
+            page_size: 每页数量
+            page: 页码
+            report_code: 报表代码
+            
+        Returns:
+            包含报表数据的字典，失败返回None
+        """
+        if not self.login_client.is_logged_in():
+            raise ValueError("未登录，请先调用login_client.login()")
+
+        from datetime import datetime, timedelta
+        from bs4 import BeautifulSoup
+
+        # 如果没有提供日期，默认查询最近3个月的数据
+        if not start_date or not end_date:
+            end_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            start_date = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d %H:%M:%S")
+
+        url = f"{self.base_url}/sys/report/ureport/zfsCustomReport/previewReport"
+
+        # 构建查询参数
+        params = {
+            "reportName": "单据查询报表",
+            "reportCode": report_code,
+            "_u": f"database:{report_code}",
+            "startBoeDate": start_date,
+            "endBoeDate": end_date,
+            "st": int(time.time() * 1000),
+            "_i": page,
+            "zfsReportPageSize_": page_size,
+            "zfs_rptReportType_": "XY_REPORT_001002_TYPE_003"
+        }
+
+        headers = self.login_client.get_headers()
+        headers.update({
+            "Upgrade-Insecure-Requests": "1",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,"
+                      "*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+            "Referer": f"{self.base_url}/report/"
+        })
+
+        try:
+            logger.info(f"正在获取第 {page} 页报表数据，日期范围: {start_date} 到 {end_date}")
+            response = self.login_client.get_session().get(url, headers=headers, params=params, verify=False,
+                                                           timeout=30)
+            response.raise_for_status()
+
+            # 解析HTML响应
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # 提取分页信息
+            page_info = self.extract_page_info(soup)
+
+            # 提取表格数据
+            table_data = self.extract_table_data(soup)
+
+            result = {
+                "page_info": page_info,
+                "data": table_data,
+                "current_page": page,
+                "page_size": page_size,
+                "query_params": params
+            }
+
+            logger.info(f"成功获取第 {page} 页数据，共 {len(table_data)} 条记录")
+            return result
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"请求报表数据时发生错误: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"解析报表数据时发生错误: {e}")
+            return None
+
+    def get_full_report_by_boeno(self, boe_no: str, report_code: str = "zfsboestatementvPage.ureport.xml") -> (
+            Optional)[Dict]:
+        """
+        通过 boeNo 调用全量单据接口并解析页面，返回包含 boeHeaderId 的单条数据
+        
+        Args:
+            boe_no: 单据编号
+            report_code: 报表代码
+            
+        Returns:
+            包含boeHeaderId的单条数据，失败返回None
+        """
+        if not self.login_client.is_logged_in():
+            raise ValueError("未登录，请先调用login_client.login()")
+
+        from bs4 import BeautifulSoup
+        from urllib.parse import urlparse, parse_qs
+
+        url = f"{self.base_url}/sys/report/ureport/zfsCustomReport/previewReport"
+
+        params = {
+            "boeNo": boe_no,
+            "_u": f"database:{report_code}"
+        }
+
+        headers = self.login_client.get_headers()
+        headers.update({
+            "Upgrade-Insecure-Requests": "1",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,"
+                      "*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+            "Referer": f"{self.base_url}/report/"
+        })
+
+        try:
+            logger.info(f"通过 boeNo 获取全量单据: {boe_no}")
+            response = self.login_client.get_session().get(url, headers=headers, params=params, verify=False,
+                                                           timeout=30)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # 解析表格
+            table = soup.find('table')
+            if not table:
+                logger.warning(f"boeNo={boe_no} 未找到数据表格")
+                return None
+
+            headers_row = table.find('tr')
+            headers_list: List[str] = []
+            if headers_row:
+                for th in headers_row.find_all('td'):
+                    headers_list.append(th.get_text(strip=True))
+
+            data_rows = table.find_all('tr')[1:]
+            if not data_rows:
+                logger.warning(f"boeNo={boe_no} 未返回数据行")
+                return None
+
+            first_row = data_rows[0]
+            row_cells = first_row.find_all('td')
+            row_data: Dict[str, any] = {}
+            for i, cell in enumerate(row_cells):
+                if i < len(headers_list):
+                    link = cell.find('a')
+                    if link:
+                        row_data[headers_list[i]] = {
+                            "text": cell.get_text(strip=True),
+                            "link": link.get('href', ''),
+                            "link_text": link.get_text(strip=True)
+                        }
+                    else:
+                        row_data[headers_list[i]] = cell.get_text(strip=True)
+
+            # 从 a 链接中提取 boeHeaderId
+            boe_header_id: Optional[str] = None
+            anchor = first_row.find('a')
+            if anchor and anchor.get('href'):
+                href = anchor.get('href')
+                try:
+                    parsed = urlparse(href)
+                    boe_header_id = (parse_qs(parsed.query).get('boeHeaderId') or [None])[0]
+                except Exception as e:
+                    logger.error(f"解析 boeHeaderId 时发生错误: {e}")
+                    boe_header_id = None
+
+            if not boe_header_id:
+                logger.warning(f"boeNo={boe_no} 未解析到 boeHeaderId")
+
+            result = {
+                "boeNo": boe_no,
+                "boeHeaderId": boe_header_id,
+                "row": row_data
+            }
+
+            logger.info(f"全量单据解析成功: boeNo={boe_no}, boeHeaderId={boe_header_id}")
+            return result
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"全量单据请求失败 boeNo={boe_no}: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"全量单据解析失败 boeNo={boe_no}: {e}")
+            return None
+
+    def get_boe_detail(self, boe_no: str, boe_header_id: str, key: str = "0MQ/TJHOFRPXdpVU7NxEQN6a+Tjjv0WP") -> \
+            Optional[Dict]:
+        """
+        获取单据详情数据
+        
+        Args:
+            boe_no: 单据编号
+            boe_header_id: 单据头ID
+            key: 详情接口所需的key
+            
+        Returns:
+            包含单据详情的字典，失败返回None
+        """
+        if not boe_header_id:
+            logger.warning(f"获取详情时缺少 boeHeaderId，boeNo={boe_no}")
+            return None
+
+        url = f"{self.base_url}/sys/boe/core/editDraftBoe"
+        payload = {
+            "boeNo": boe_no,
+            "boeHeaderId": boe_header_id,
+            "key": key
+        }
+
+        try:
+            logger.info(f"请求单据详情 boeNo={boe_no}, boeHeaderId={boe_header_id}")
+            response = requests.post(url, data=payload, timeout=300)
+            response.raise_for_status()
+
+            # 期望返回 JSON
+            try:
+                data = response.json()
+            except json.JSONDecodeError:
+                # 有些情况下返回文本里内含 JSON 字符串，尝试兜底
+                text = response.text
+                if text.strip().startswith("{") and text.strip().endswith("}"):
+                    data = json.loads(text)
+                else:
+                    logger.error("详情接口未返回JSON格式")
+                    return None
+
+            result = {
+                "boeNo": boe_no,
+                "boeHeaderId": boe_header_id,
+                "data": data
+            }
+            logger.info(f"单据详情获取成功 boeNo={boe_no}")
+            return result
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"请求单据详情失败 boeNo={boe_no}: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"解析单据详情失败 boeNo={boe_no}: {e}")
+            return None
+
+    def extract_page_info(self, soup) -> Dict:
+        """提取分页信息"""
+
+        page_info = {
+            "current_page": 1,
+            "total_pages": 1,
+            "total_count": 0
+        }
+
+        try:
+            # 查找分页信息
+            page_index_elem = soup.find('span', {'id': 'reportPageIndex'})
+            total_page_elem = soup.find('span', {'id': 'reportTotalPage'})
+            total_count_elem = soup.find('span', {'id': 'reportTotalCount'})
+
+            if page_index_elem:
+                page_info["current_page"] = int(page_index_elem.text.strip())
+            if total_page_elem:
+                page_info["total_pages"] = int(total_page_elem.text.strip())
+            if total_count_elem:
+                page_info["total_count"] = int(total_count_elem.text.strip())
+
+        except Exception as e:
+            logger.warning(f"提取分页信息时发生错误: {e}")
+
+        return page_info
+
+    def extract_table_data(self, soup) -> List[Dict]:
+        """提取表格数据"""
+
+        table_data = []
+
+        try:
+            # 查找表格
+            table = soup.find('table')
+            if not table:
+                logger.warning("未找到数据表格")
+                return table_data
+
+            # 获取表头
+            headers = []
+            header_row = table.find('tr')
+            if header_row:
+                for th in header_row.find_all('td'):
+                    headers.append(th.get_text(strip=True))
+
+            # 获取数据行
+            data_rows = table.find_all('tr')[1:]  # 跳过表头
+
+            for row in data_rows:
+                row_data = {}
+                cells = row.find_all('td')
+
+                for i, cell in enumerate(cells):
+                    if i < len(headers):
+                        # 处理链接
+                        link = cell.find('a')
+                        if link:
+                            row_data[headers[i]] = {
+                                "text": cell.get_text(strip=True),
+                                "link": link.get('href', ''),
+                                "link_text": link.get_text(strip=True)
+                            }
+                        else:
+                            row_data[headers[i]] = cell.get_text(strip=True)
+
+                if row_data:  # 只添加非空行
+                    table_data.append(row_data)
+
+        except Exception as e:
+            logger.error(f"提取表格数据时发生错误: {e}")
+
+        return table_data

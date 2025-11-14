@@ -1,10 +1,8 @@
-import json
 import logging
 import time
 from typing import Dict, Optional
 
-import requests
-from requests.utils import dict_from_cookiejar
+from api.api_client import UnifiedLoginClient, OrgAPIClient
 from database.database_manager import DataBaseManager
 
 # 配置日志
@@ -27,26 +25,18 @@ class OrgCrawler:
         self.base_url = base_url
         self.login_key = login_key
         self.password = password
-        self.session = requests.Session()
         self.departments = []  # 存储所有部门信息
         self.employees = []  # 存储所有人员信息
         self.visited_depts = set()  # 避免重复访问
         self.db_manager = DataBaseManager()  # 数据库管理器
 
-        # 设置请求头
-        self.headers = {
-            "Connection": "keep-alive",
-            "Accept": "application/json, text/plain, */*",
-            "pageUri": "#/orgManage",
-            "Accept-Language": "zh-CN",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                          "Chrome/97.0.4692.71 Safari/537.36",
-            "Referer": f"{base_url}/",
-            "Cookie": ""
-        }
-
-        # 认证信息，将通过登录获取
-        self.authkey = None
+        # 使用统一的登录客户端和API客户端
+        self.login_client = UnifiedLoginClient(base_url, login_key, password)
+        self.api_client = OrgAPIClient(self.login_client)
+        
+        # 保持向后兼容
+        self.session = self.login_client.get_session()
+        self.authkey = None  # 将在登录后设置
 
     def _truncate_string(self, text: str, max_chars: int = 400) -> str:
         
@@ -111,56 +101,10 @@ class OrgCrawler:
         Returns:
             bool: 登录成功返回True，失败返回False
         """
-        login_url = f"{self.base_url}/sys/auth/login"
-
-        # 准备登录数据
-        login_data = {
-            "loginKey": self.login_key,
-            "password": self.password
-        }
-
-        # 设置登录请求头
-        login_headers = {
-            "Connection": "keep-alive",
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "zh-CN",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                          "Chrome/97.0.4692.71 Safari/537.36",
-            "Referer": f"{self.base_url}/",
-            "Content-Type": "application/x-www-form-urlencoded"
-        }
-
-        try:
-            logger.info(f"正在尝试登录，用户名: {self.login_key}")
-            response = self.session.post(login_url, headers=login_headers, data=login_data, verify=False, timeout=30)
-            response.raise_for_status()
-
-            result = response.json()
-            print(result)
-            if result.get("code") == 0:
-                # 登录成功，获取认证信息
-                self.authkey = "PiK0iSYIrs559DnX1Wcr3UOaWIKk0hNd5yhIaknVf7DGSVuPJUJpFZ9tRsS0ZUdB"
-
-                # 更新请求头中的Cookie
-                cookies = dict_from_cookiejar(self.session.cookies)
-                cookie_str = "; ".join([f"{k}={v}" for k, v in cookies.items()])
-                self.headers["Cookie"] = cookie_str
-
-                return True
-            else:
-                logger.error(f"登录失败: {result.get('msg', '未知错误')}")
-
-                return False
-
-        except requests.exceptions.RequestException as e:
-            logger.error(f"登录请求失败: {e}")
-            return False
-        except json.JSONDecodeError as e:
-            logger.error(f"解析登录响应JSON失败: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"登录过程中发生未知错误: {e}")
-            return False
+        success = self.login_client.login()
+        if success:
+            self.authkey = self.login_client.get_authkey()
+        return success
 
     def update_authkey(self, new_authkey: str):
         """更新认证密钥"""
@@ -181,29 +125,7 @@ class OrgCrawler:
         Returns:
             包含子部门信息的字典，失败返回None
         """
-        url = f"{self.base_url}/sys/common/dept/findChildrenById/{dept_id}"
-        params = {"time": int(time.time())}
-
-        headers = self.headers.copy()
-        headers["authkey"] = self.authkey
-
-        try:
-            response = self.session.get(url, headers=headers, params=params, verify=False, timeout=30)
-            response.raise_for_status()
-
-            data = response.json()
-            if data.get("code") == 0:
-                return data
-            else:
-                logger.error(f"获取部门 {dept_id} 失败: {data.get('msg', '未知错误')}")
-                return None
-
-        except requests.exceptions.RequestException as e:
-            logger.error(f"请求部门 {dept_id} 时发生错误: {e}")
-            return None
-        except json.JSONDecodeError as e:
-            logger.error(f"解析部门 {dept_id} 响应JSON失败: {e}")
-            return None
+        return self.api_client.get_children_by_id(dept_id)
 
     def find_shanghai_railway_id(self, root_data: Dict) -> Optional[str]:
         """
@@ -241,39 +163,7 @@ class OrgCrawler:
         Returns:
             包含分页数据的字典，失败返回None
         """
-        url = f"{self.base_url}/sys/common/dept/page"
-
-        headers = self.headers.copy()
-        headers.update({
-            "Content-Type": "application/x-www-form-urlencoded",
-            "authkey": self.authkey
-        })
-
-        data = {
-            "page": page,
-            "limit": limit,
-            "orderField": "",
-            "order": "",
-            "pid": parent_id
-        }
-
-        try:
-            response = self.session.post(url, headers=headers, data=data, verify=False, timeout=30)
-            response.raise_for_status()
-
-            result = response.json()
-            if result.get("code") == 0:
-                return result
-            else:
-                logger.error(f"获取部门 {parent_id} 分页数据失败: {result.get('msg', '未知错误')}")
-                return None
-
-        except requests.exceptions.RequestException as e:
-            logger.error(f"请求部门 {parent_id} 分页数据时发生错误: {e}")
-            return None
-        except json.JSONDecodeError as e:
-            logger.error(f"解析部门 {parent_id} 分页响应JSON失败: {e}")
-            return None
+        return self.api_client.get_dept_page(parent_id, page, limit)
 
     def crawl_departments_recursive(self, dept_id: str = "0", level: int = 0):
         """
