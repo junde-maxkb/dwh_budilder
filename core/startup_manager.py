@@ -79,7 +79,7 @@ class StartupManager:
             logger.info("系统管理器已启动")
 
             # 创建初始任务
-            financial_success, traditional_success = self.task_manager.create_initial_tasks()
+            financial_success, traditional_success, crawler_success = self.task_manager.create_initial_tasks()
 
             if financial_success:
                 logger.info("财务报表任务添加成功")
@@ -89,6 +89,11 @@ class StartupManager:
             if not traditional_success:
                 logger.error("传统数据任务添加失败")
                 return False
+
+            if crawler_success:
+                logger.info("爬虫任务（组织架构、资金流水、报账单）添加成功")
+            else:
+                logger.warning("爬虫任务添加失败，但继续执行其他任务")
 
             return True
 

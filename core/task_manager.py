@@ -2,6 +2,9 @@ import json
 import logging
 import os
 from utils.generate_period_code import generate_period_codes
+from core.org_crawler import OrgCrawler
+from core.flow_crawler import FlowCrawler
+from core.boe_crawler import BoeCrawler
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +56,10 @@ class TaskManager:
             # 2. 检查传统财务数据新任务
             has_new_traditional_tasks = self._check_traditional_data_tasks()
 
-            has_new_tasks = has_new_financial_tasks or has_new_traditional_tasks
+            # 3. 检查组织架构、资金流水、报账单新任务
+            has_new_crawler_tasks = self._check_crawler_tasks()
+
+            has_new_tasks = has_new_financial_tasks or has_new_traditional_tasks or has_new_crawler_tasks
 
             if has_new_tasks:
                 logger.info("🎉 发现新数据，已添加相应任务到处理队列")
@@ -179,12 +185,156 @@ class TaskManager:
             logger.warning(f"检查传统数据新任务时发生错误: {e}")
             return False
 
-    def create_initial_tasks(self) -> tuple[bool, bool]:
+    def _check_crawler_tasks(self) -> bool:
+        """检查组织架构、资金流水、报账单新任务"""
+        try:
+            has_new_tasks = False
+
+            # 检查组织架构任务
+            if not self._check_crawler_task_exists("org_crawler"):
+                if self._add_crawler_task("org_crawler", self._run_org_crawler, priority=20):
+                    has_new_tasks = True
+                    logger.info("✅ 发现并添加新的组织架构任务")
+
+            # 检查资金流水任务
+            if not self._check_crawler_task_exists("flow_crawler"):
+                if self._add_crawler_task("flow_crawler", self._run_flow_crawler, priority=19):
+                    has_new_tasks = True
+                    logger.info("✅ 发现并添加新的资金流水任务")
+
+            # 检查报账单任务
+            if not self._check_crawler_task_exists("boe_crawler"):
+                if self._add_crawler_task("boe_crawler", self._run_boe_crawler, priority=18):
+                    has_new_tasks = True
+                    logger.info("✅ 发现并添加新的报账单任务")
+
+            if has_new_tasks:
+                logger.info(f"📈 爬虫任务检查完成，新增任务")
+                return True
+            else:
+                logger.info("📊 爬虫任务检查完成，无新任务")
+                return False
+
+        except Exception as e:
+            logger.warning(f"检查爬虫任务时发生错误: {e}")
+            return False
+
+    def _check_crawler_task_exists(self, task_type: str) -> bool:
+        """检查爬虫任务是否已存在"""
+        try:
+            system_status = self.system_manager.get_system_status()
+            existing_tasks = system_status.get("task_details", {})
+            task_name = f"crawler_{task_type}"
+            return any(task_name in task_name_key for task_name_key in existing_tasks.keys())
+        except Exception as e:
+            logger.warning(f"检查爬虫任务是否存在时发生错误: {e}")
+            return False
+
+    def _add_crawler_task(self, task_type: str, func, priority: int = 0) -> bool:
+        """添加爬虫任务到系统"""
+        try:
+            task_name = f"crawler_{task_type}"
+            success = self.system_manager.add_task(
+                name=task_name,
+                func=func,
+                args=(),
+                kwargs={},
+                priority=priority,
+                max_retries=3
+            )
+            return success
+        except Exception as e:
+            logger.error(f"添加爬虫任务 {task_type} 时发生错误: {e}")
+            return False
+
+    def _run_org_crawler(self):
+        """运行组织架构爬虫任务"""
+        try:
+            logger.info("开始执行组织架构爬虫任务...")
+            crawler = OrgCrawler()
+            crawler.run()
+            logger.info("组织架构爬虫任务执行完成")
+            return {"success": True, "message": "组织架构爬虫任务执行成功"}
+        except Exception as e:
+            logger.error(f"组织架构爬虫任务执行失败: {e}")
+            raise
+
+    def _run_flow_crawler(self):
+        """运行资金流水爬虫任务"""
+        try:
+            logger.info("开始执行资金流水爬虫任务...")
+            crawler = FlowCrawler()
+            stats = crawler.run()
+            logger.info(f"资金流水爬虫任务执行完成，统计: {stats}")
+            return {"success": True, "message": "资金流水爬虫任务执行成功", "stats": stats}
+        except Exception as e:
+            logger.error(f"资金流水爬虫任务执行失败: {e}")
+            raise
+
+    def _run_boe_crawler(self):
+        """运行报账单爬虫任务"""
+        try:
+            logger.info("开始执行报账单爬虫任务...")
+            crawler = BoeCrawler()
+            # 可以根据需要设置日期范围，这里使用默认值（None表示爬取所有数据）
+            crawler.run(start_date="", end_date="")
+            logger.info("报账单爬虫任务执行完成")
+            return {"success": True, "message": "报账单爬虫任务执行成功"}
+        except Exception as e:
+            logger.error(f"报账单爬虫任务执行失败: {e}")
+            raise
+
+    def _create_initial_crawler_tasks(self) -> bool:
+        """创建初始爬虫任务（组织架构、资金流水、报账单）"""
+        logger.info("步骤3: 初次启动 - 添加爬虫任务到队列（组织架构、资金流水、报账单）")
+
+        try:
+            tasks_added = 0
+
+            # 添加组织架构任务
+            if not self._check_crawler_task_exists("org_crawler"):
+                if self._add_crawler_task("org_crawler", self._run_org_crawler, priority=20):
+                    tasks_added += 1
+                    logger.info("✅ 组织架构任务已添加到队列")
+                else:
+                    logger.error("❌ 添加组织架构任务失败")
+            else:
+                logger.info("组织架构任务已存在，跳过")
+
+            # 添加资金流水任务
+            if not self._check_crawler_task_exists("flow_crawler"):
+                if self._add_crawler_task("flow_crawler", self._run_flow_crawler, priority=19):
+                    tasks_added += 1
+                    logger.info("✅ 资金流水任务已添加到队列")
+                else:
+                    logger.error("❌ 添加资金流水任务失败")
+            else:
+                logger.info("资金流水任务已存在，跳过")
+
+            # 添加报账单任务
+            if not self._check_crawler_task_exists("boe_crawler"):
+                if self._add_crawler_task("boe_crawler", self._run_boe_crawler, priority=18):
+                    tasks_added += 1
+                    logger.info("✅ 报账单任务已添加到队列")
+                else:
+                    logger.error("❌ 添加报账单任务失败")
+            else:
+                logger.info("报账单任务已存在，跳过")
+
+            success = tasks_added > 0
+            logger.info(f"爬虫任务添加完成，成功添加 {tasks_added} 个任务")
+            return success
+
+        except Exception as e:
+            logger.error(f"添加爬虫任务到队列时发生错误: {e}", exc_info=True)
+            return False
+
+    def create_initial_tasks(self) -> tuple[bool, bool, bool]:
         """
         创建初始启动任务
 
         Returns:
-            tuple: (财务报表任务是否成功, 传统数据任务是否成功)
+            tuple: (财务报表任务是否成功, 传统数据任务是否成功, 爬虫任务是否成功)
         """
         try:
             # 创建初始财务报表任务
@@ -193,11 +343,14 @@ class TaskManager:
             # 创建初始传统数据任务
             traditional_success = self._create_initial_traditional_tasks()
 
-            return financial_success, traditional_success
+            # 创建初始爬虫任务（组织架构、资金流水、报账单）
+            crawler_success = self._create_initial_crawler_tasks()
+
+            return financial_success, traditional_success, crawler_success
 
         except Exception as e:
             logger.error(f"创建初始任务时发生错误: {e}", exc_info=True)
-            return False, False
+            return False, False, False
 
     def _create_initial_financial_tasks(self) -> bool:
         """创建初始财务报表任务"""
