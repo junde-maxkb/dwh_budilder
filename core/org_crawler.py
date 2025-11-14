@@ -48,6 +48,62 @@ class OrgCrawler:
         # 认证信息，将通过登录获取
         self.authkey = None
 
+    def _truncate_string(self, text: str, max_chars: int = 400) -> str:
+        
+        if not text or not isinstance(text, str):
+            return text if text is not None else ""
+        
+        # 如果字符串长度不超过限制，直接返回
+        if len(text) <= max_chars:
+            return text
+        
+        # 截断字符串，保留前 max_chars 个字符
+        truncated = text[:max_chars]
+        
+        # 如果原字符串被截断，记录警告日志（仅记录一次，避免日志过多）
+        if len(text) > max_chars:
+            logger.debug(f"字符串被截断: 原长度={len(text)}, 截断后长度={len(truncated)}, 内容预览={truncated[:50]}...")
+        
+        return truncated
+
+    def _truncate_employee_fields(self, employee: Dict) -> Dict:
+        """
+        截断员工数据中可能过长的字符串字段
+        
+        Args:
+            employee: 员工数据字典
+        
+        Returns:
+            处理后的员工数据字典
+        """
+        # 定义各字段的最大长度限制（字符数）
+        field_limits = {
+            "dept_name": 400,  # 部门名称可能包含完整路径
+            "name": 100,  # 姓名
+            "code": 100,  # 编码
+            "leader_name": 100,  # 领导姓名
+            "primary_post": 100,  # 主岗位ID
+            "primary_post_name": 200,  # 主岗位名称
+            "travel_level": 100,  # 差旅级别ID
+            "travel_level_name": 200,  # 差旅级别名称
+            "remark": 500,  # 备注
+            "id": 100,  # ID
+            "user_id": 100,  # 用户ID
+            "dept_id": 100,  # 部门ID
+            "parent_id": 100,  # 父部门ID
+            "validity_flag": 50,  # 有效性标志
+            "enabled_flag": 50,  # 启用标志
+            "create_date": 50,  # 创建日期
+            "last_update_date": 50,  # 最后更新日期
+        }
+        
+        # 对每个字段进行截断处理
+        for field, max_length in field_limits.items():
+            if field in employee and employee[field] is not None:
+                employee[field] = self._truncate_string(str(employee[field]), max_length)
+        
+        return employee
+
     def login(self) -> bool:
         """
         登录系统获取认证信息
@@ -329,8 +385,25 @@ class OrgCrawler:
                         "remark": item.get("remark", "")
                     }
 
+                    # 截断可能过长的字段，避免数据库字段长度限制错误
+                    employee = self._truncate_employee_fields(employee)
+                    
                     self.employees.append(employee)
                     logger.info(f"{indent}  - 人员: {employee['name']} ({employee['code']})")
+                    
+                    # 立即保存到数据库
+                    try:
+                        success = self.db_manager.auto_create_and_save_data(
+                            [employee],  # 将单条数据包装成列表
+                            "raw_organize",
+                            if_exists='append'
+                        )
+                        if success:
+                            logger.debug(f"{indent}    ✓ 已保存到数据库")
+                        else:
+                            logger.warning(f"{indent}    ✗ 保存到数据库失败")
+                    except Exception as e:
+                        logger.error(f"{indent}    保存人员数据时发生错误: {e}")
 
             # 检查是否还有下一页
             total_pages = page_info.get("totalPage", 1)
@@ -371,18 +444,9 @@ class OrgCrawler:
                 logger.warning("未找到上海铁路部门，从根部门开始爬取")
                 self.crawl_departments_recursive(start_dept_id)
 
-            # 写入数据库
+            # 注意：数据已在获取时逐条保存，此处仅用于统计
             if self.employees:
-                logger.info(f"开始将 {len(self.employees)} 条员工数据写入数据库...")
-                success = self.db_manager.auto_create_and_save_data(
-                    self.employees,
-                    "raw_organize",
-                    if_exists='append'
-                )
-                if success:
-                    logger.info(f"成功将 {len(self.employees)} 条员工数据写入数据库表 raw_organize")
-                else:
-                    logger.error("写入员工数据到数据库失败")
+                logger.info(f"爬取完成，共获取 {len(self.employees)} 条员工数据（已逐条保存到数据库）")
             else:
                 logger.warning("没有员工数据需要写入数据库")
 

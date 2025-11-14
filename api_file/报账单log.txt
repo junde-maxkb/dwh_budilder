@@ -1,0 +1,48 @@
+25-11-04 06:08:33,113 - INFO - 成功完成所有批次插入，总共插入 1 条记录到表 row_boe_full_reports
+2025-11-04 06:08:33,125 - INFO - 请求单据详情 boeNo=GZ-2SH002703D-0719-0..., boeHeaderId=null
+2025-11-04 06:08:33,511 - INFO - 单据详情获取成功 boeNo=GZ-2SH002703D-0719-0...,row={'boeNo': 'GZ-2SH002703D-0719-0...', 'boeHeaderId': 'null', 'data': {'msg': '未找到对应的单据类型，请检查配置', 'code': 500, 'type': 'INFO'}}
+2025-11-04 06:08:33,673 - INFO - 开始插入数据到表 row_boe_details，模式: append
+2025-11-04 06:08:33,711 - INFO - 开始分批次插入数据到表 row_boe_details，总记录数: 1，批次大小: 1
+2025-11-04 06:08:33,742 - ERROR - 插入第 0-1 批次数据时发生错误: ORA-00001: unique constraint 'null' for key 'row_boe_details_OBPK_1762160756900055' violated
+2025-11-04 06:08:33,782 - ERROR - 写入单条单据详情数据 boeNo=GZ-2SH002703D-0719-0... 到数据库表 row_boe_details 失败
+2025-11-04 06:08:33,782 - WARNING - boeNo=GZ-2SH002703D-0719-0... 单据详情写入数据库失败
+2025-11-04 06:08:34,282 - INFO - 通过 boeNo 获取全量单据: GZ-2SH002703D-0719-0...
+2025-11-04 06:08:36,023 - INFO - 全量单据解析成功: boeNo=GZ-2SH002703D-0719-0..., boeHeaderId=null, row={'单据编号': {'text': '', 'link': '/sys/report/ureport/zfsCustomReport/reportBillView?boeHeaderId=null', 'link_text': ''}, '单据类型': '', '单据日期': '', '审核完成时间': '', '提单人': '', '报账人': '', '报账部门': '', '单据状态': '', '影像状态': '', '付款状态': '', '当前处理人': '', '核算主体': '', '费用承担部门': '', '业务类型': '', '对方单位': '', '报账金额(本位币)': '', '核销金额(本位币)': '', '付款金额(本位币)': '', '税金': '', '摘要': '', '付款用途': '', '支付金额': ''}
+2025-11-04 06:08:36,151 - INFO - 开始插入数据到表 row_boe_full_reports，模式: append
+2025-11-04 06:08:36,183 - INFO - 开始分批次插入数据到表 row_boe_full_reports，总记录数: 1，批次大小: 1
+2025-11-04 06:08:36,221 - INFO - 已插入 1/1 条记录 (100.0%)
+2025-11-04 06:08:36,221 - INFO - 成功完成所有批次插入，总共插入 1 条记录到表 row_boe_full_reports
+2025-11-04 06:08:36,236 - INFO - 请求单据详情 boeNo=GZ-2SH002703D-0719-0..., boeHeaderId=null
+2025-11-04 06:08:36,504 - INFO - 单据详情获取成功 boeNo=GZ-2SH002703D-0719-0...,row={'boeNo': 'GZ-2SH002703D-0719-0...', 'boeHeaderId': 'null', 'data': {'msg': '未找到对应的单据类型，请检查配置', 'code': 500, 'type': 'INFO'}}
+2025-11-04 06:08:36,717 - INFO - 开始插入数据到表 row_boe_details，模式: append
+2025-11-04 06:08:36,784 - INFO - 开始分批次插入数据到表 row_boe_details，总记录数: 1，批次大小: 1
+2025-11-04 06:08:36,819 - ERROR - 插入第 0-1 批次数据时发生错误: ORA-00001: unique constraint 'null' for key 'row_boe_details_OBPK_1762160756900055' violated
+2025-11-04 06:08:36,872 - ERROR - 写入单条单据详情数据 boeNo=GZ-2SH002703D-0719-0... 到数据库表 row_boe_details 失败
+2025-11-04 06:08:36,872 - WARNING - boeNo=GZ-2SH002703D-0719-0... 单据详情写入数据库失败
+2025-11-04 06:08:37,372 - INFO - 通过 boeNo 获取全量单据: GZ-2SH002703D-0719-0...
+2025-11-04 06:08:38,481 - INFO - 全量单据解析成功: boeNo=GZ-2SH002703D-0719-0..., boeHeaderId=null, row={'单据编号': {'text': '', 'link': '/sys/report/ureport/zfsCustomReport/reportBillView?boeHeaderId=null', 'link_text': ''}, '单据类型': '', '单据日期': '', '审核完成时间': '', '提单人': '', '报账人': '', '报账部门': '', '单据状态': '', '影像状态': '', '付款状态': '', '当前处理人': '', '核算主体': '', '费用承担部门': '', '业务类型': '', '对方单位': '', '报账金额(本位币)': '', '核销金额(本位币)': '', '付款金额(本位币)': '', '税金': '', '摘要': '', '付款用途': '', '支付金额': ''}
+2025-11-04 06:08:38,669 - INFO - 开始插入数据到表 row_boe_full_reports，模式: append
+2025-11-04 06:08:38,720 - INFO - 开始分批次插入数据到表 row_boe_full_reports，总记录数: 1，批次大小: 1
+2025-11-04 06:08:38,778 - INFO - 已插入 1/1 条记录 (100.0%)
+2025-11-04 06:08:38,778 - INFO - 成功完成所有批次插入，总共插入 1 条记录到表 row_boe_full_reports
+2025-11-04 06:08:38,799 - INFO - 请求单据详情 boeNo=GZ-2SH002703D-0719-0..., boeHeaderId=null
+2025-11-04 06:08:38,872 - INFO - 单据详情获取成功 boeNo=GZ-2SH002703D-0719-0...,row={'boeNo': 'GZ-2SH002703D-0719-0...', 'boeHeaderId': 'null', 'data': {'msg': '未找到对应的单据类型，请检查配置', 'code': 500, 'type': 'INFO'}}
+2025-11-04 06:08:39,020 - INFO - 开始插入数据到表 row_boe_details，模式: append
+2025-11-04 06:08:39,074 - INFO - 开始分批次插入数据到表 row_boe_details，总记录数: 1，批次大小: 1
+2025-11-04 06:08:39,105 - ERROR - 插入第 0-1 批次数据时发生错误: ORA-00001: unique constraint 'null' for key 'row_boe_details_OBPK_1762160756900055' violated
+2025-11-04 06:08:39,139 - ERROR - 写入单条单据详情数据 boeNo=GZ-2SH002703D-0719-0... 到数据库表 row_boe_details 失败
+2025-11-04 06:08:39,140 - WARNING - boeNo=GZ-2SH002703D-0719-0... 单据详情写入数据库失败
+2025-11-04 06:08:39,640 - INFO - 通过 boeNo 获取全量单据: GZ-2SH002703D-0719-0...
+2025-11-04 06:08:40,755 - INFO - 全量单据解析成功: boeNo=GZ-2SH002703D-0719-0..., boeHeaderId=null, row={'单据编号': {'text': '', 'link': '/sys/report/ureport/zfsCustomReport/reportBillView?boeHeaderId=null', 'link_text': ''}, '单据类型': '', '单据日期': '', '审核完成时间': '', '提单人': '', '报账人': '', '报账部门': '', '单据状态': '', '影像状态': '', '付款状态': '', '当前处理人': '', '核算主体': '', '费用承担部门': '', '业务类型': '', '对方单位': '', '报账金额(本位币)': '', '核销金额(本位币)': '', '付款金额(本位币)': '', '税金': '', '摘要': '', '付款用途': '', '支付金额': ''}
+2025-11-04 06:08:40,839 - INFO - 开始插入数据到表 row_boe_full_reports，模式: append
+2025-11-04 06:08:40,865 - INFO - 开始分批次插入数据到表 row_boe_full_reports，总记录数: 1，批次大小: 1
+2025-11-04 06:08:40,887 - INFO - 已插入 1/1 条记录 (100.0%)
+2025-11-04 06:08:40,887 - INFO - 成功完成所有批次插入，总共插入 1 条记录到表 row_boe_full_reports
+2025-11-04 06:08:40,895 - INFO - 请求单据详情 boeNo=GZ-2SH002703D-0719-0..., boeHeaderId=null
+2025-11-04 06:08:40,972 - INFO - 单据详情获取成功 boeNo=GZ-2SH002703D-0719-0...,row={'boeNo': 'GZ-2SH002703D-0719-0...', 'boeHeaderId': 'null', 'data': {'msg': '未找到对应的单据类型，请检查配置', 'code': 500, 'type': 'INFO'}}
+2025-11-04 06:08:41,049 - INFO - 开始插入数据到表 row_boe_details，模式: append
+2025-11-04 06:08:41,075 - INFO - 开始分批次插入数据到表 row_boe_details，总记录数: 1，批次大小: 1
+2025-11-04 06:08:41,088 - ERROR - 插入第 0-1 批次数据时发生错误: ORA-00001: unique constraint 'null' for key 'row_boe_details_OBPK_1762160756900055' violated
+2025-11-04 06:08:41,105 - ERROR - 写入单条单据详情数据 boeNo=GZ-2SH002703D-0719-0... 到数据库表 row_boe_details 失败
+2025-11-04 06:08:41,105 - WARNING - boeNo=GZ-2SH002703D-0719-0... 单据详情写入数据库失败
+2025-11-04 06:08:41,606 - INFO - 通过 boeNo 获取全量单据: GZ-2SH002703D-0719-0...

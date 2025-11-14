@@ -36,7 +36,7 @@ class BoeCrawler:
         self.details = []
         self.query_fields = []
         self.detail_key: Optional[str] = None
-        
+
         # 初始化数据库管理器
         self.db_manager = DataBaseManager()
 
@@ -384,14 +384,16 @@ class BoeCrawler:
             return None
 
     def process_bills_with_details(self):
-        """串联处理：从 self.reports 提取 boeNo -> 全量单据 -> boeHeaderId -> 单据详情，并仅保存两类数据。"""
+        """从 self.reports 提取 boeNo -> 全量单据 -> boeHeaderId -> 单据详情，获取一条数据就写入一条。"""
         if not self.reports:
             logger.warning("没有可处理的报账单记录（列表页数据为空）")
             return
 
         processed = 0
+        saved_full_reports = 0
+        saved_details = 0
         for report in self.reports:
-            # 提取 boeNo（列名通常为“单据编号”）
+            # 提取 boeNo（列名通常为"单据编号"）
             boe_value = report.get("单据编号") or report.get("单据编号(BOE)") or report.get("单据号")
             if not boe_value:
                 continue
@@ -411,107 +413,173 @@ class BoeCrawler:
                 logger.warning(f"boeNo={boe_no} 全量单据获取失败，跳过详情")
                 continue
 
-            self.full_reports.append(full_item)
+            if self.save_single_full_report_to_database(full_item):
+                saved_full_reports += 1
+                self.full_reports.append(full_item)
+            else:
+                logger.warning(f"boeNo={boe_no} 全量单据写入数据库失败")
 
             boe_header_id = full_item.get("boeHeaderId")
-            if not boe_header_id:
-                logger.warning(f"boeNo={boe_no} 未取得 boeHeaderId，跳过详情")
+            # 检查 boeHeaderId 是否为有效值（不是 None、空字符串或字符串 "null"）
+            if not boe_header_id or boe_header_id == "null" or str(boe_header_id).strip() == "":
+                logger.warning(f"boeNo={boe_no} 未取得有效的 boeHeaderId（值为: {boe_header_id}），跳过详情")
                 continue
 
-            # 2) 通过 boeHeaderId 获取单据详情
             detail_item = self.get_boe_detail(boe_no, boe_header_id)
             if detail_item:
-                self.details.append(detail_item)
+                if self.save_single_detail_to_database(detail_item):
+                    saved_details += 1
+                    self.details.append(detail_item)
+                else:
+                    logger.warning(f"boeNo={boe_no} 单据详情写入数据库失败")
 
             processed += 1
             time.sleep(0.5)
-        logger.info(f"串联处理完成，共处理 {processed} 条单据详情")
+        logger.info(
+            f"串联处理完成，共处理 {processed} 条单据，成功写入 {saved_full_reports} 条全量单据，{saved_details} 条单据详情")
 
-    def save_full_reports_to_database(self, table_name: str = "row_boe_full_reports") -> bool:
+    def _is_empty_full_report(self, full_item: Dict) -> bool:
         """
-        将全量单据数据写入数据库
+        检查全量单据数据是否为空
         
         Args:
-            table_name: 表名，默认为 "boe_full_reports"
+            full_item: 全量单据数据
+            
+        Returns:
+            bool: 如果数据为空返回True，否则返回False
+        """
+        row = full_item.get("row", {})
+        if not row:
+            return True
+        
+        # 检查关键字段是否都为空
+        key_fields = ["单据编号", "单据类型", "单据日期", "报账人", "报账部门", "单据状态"]
+        has_data = False
+        
+        for field in key_fields:
+            value = row.get(field, "")
+            if isinstance(value, dict):
+                # 如果是字典类型，检查text字段
+                text = value.get("text", "").strip()
+                if text:
+                    has_data = True
+                    break
+            elif isinstance(value, str) and value.strip():
+                has_data = True
+                break
+        
+        # 如果所有关键字段都为空，则认为数据为空
+        return not has_data
+
+    def save_single_full_report_to_database(self, full_item: Dict, table_name: str = "row_boe_full_reports") -> bool:
+        """
+        将单条全量单据数据立即写入数据库
+        
+        Args:
+            full_item: 单条全量单据数据
+            table_name: 表名，默认为 "row_boe_full_reports"
             
         Returns:
             bool: 写入成功返回True，失败返回False
         """
-        if not self.full_reports:
-            logger.warning("没有全量单据数据需要写入数据库")
-            return True
-        
         try:
-            logger.info(f"开始将 {len(self.full_reports)} 条全量单据数据写入数据库表 {table_name}")
+            # 过滤空数据
+            if self._is_empty_full_report(full_item):
+                boe_no = full_item.get('boeNo', 'unknown')
+                logger.info(f"跳过空数据：boeNo={boe_no} 全量单据数据为空，不写入数据库")
+                return False
+            
             success = self.db_manager.auto_create_and_save_data(
-                self.full_reports,
+                [full_item],
                 table_name,
                 if_exists='append'
             )
             if success:
-                logger.info(f"成功将 {len(self.full_reports)} 条全量单据数据写入数据库表 {table_name}")
+                logger.debug(
+                    f"成功写入单条全量单据数据 boeNo={full_item.get('boeNo', 'unknown')} 到数据库表 {table_name}")
             else:
-                logger.error(f"写入全量单据数据到数据库表 {table_name} 失败")
+                logger.error(
+                    f"写入单条全量单据数据 boeNo={full_item.get('boeNo', 'unknown')} 到数据库表 {table_name} 失败")
             return success
         except Exception as e:
-            logger.error(f"保存全量单据数据到数据库时发生错误: {e}")
+            logger.error(f"保存单条全量单据数据到数据库时发生错误: {e}")
             return False
 
-    def save_details_to_database(self, table_name: str = "row_boe_details") -> bool:
+    def _is_empty_detail(self, detail_item: Dict) -> bool:
         """
-        将单据详情数据写入数据库，只包含 id 和 report 两个字段
-        report 字段存储完整的详情 JSON 数据（文本类型/CLOB）
+        检查单据详情数据是否为空或无效
         
         Args:
-            table_name: 表名，默认为 "boe_details"
+            detail_item: 单据详情数据
+            
+        Returns:
+            bool: 如果数据为空或无效返回True，否则返回False
+        """
+        boe_header_id = detail_item.get("boeHeaderId")
+        # 检查 boeHeaderId 是否为有效值（不是 None、空字符串或字符串 "null"）
+        if not boe_header_id or boe_header_id == "null" or str(boe_header_id).strip() == "":
+            return True
+        
+        # 检查详情数据是否包含错误信息
+        data = detail_item.get("data", {})
+        if isinstance(data, dict):
+            # 检查是否返回错误信息
+            code = data.get("code")
+            msg = data.get("msg", "")
+            # 如果 code 存在且不为 0（0 表示成功），或者包含错误信息，则认为数据无效
+            if code is not None and code != 0:
+                return True
+            # 如果 msg 包含错误关键词，也认为数据无效
+            if msg and ("未找到" in msg or "错误" in msg or "失败" in msg):
+                return True
+        
+        return False
+
+    def save_single_detail_to_database(self, detail_item: Dict, table_name: str = "row_boe_details") -> bool:
+        """
+        将单条单据详情数据立即写入数据库，只包含 id 和 report 两个字段
+        
+        Args:
+            detail_item: 单条单据详情数据
+            table_name: 表名，默认为 "row_boe_details"
             
         Returns:
             bool: 写入成功返回True，失败返回False
         """
-        if not self.details:
-            logger.warning("没有单据详情数据需要写入数据库")
-            return True
-        
         try:
-            # 准备详情数据，只包含 id 和 report 两个字段
-            detail_data = []
-            for detail_item in self.details:
-                boe_header_id = detail_item.get("boeHeaderId")
-                if not boe_header_id:
-                    logger.warning(f"详情数据缺少 boeHeaderId，跳过: {detail_item.get('boeNo', 'unknown')}")
-                    continue
-                
-                # 将详情数据转换为 JSON 字符串
-                detail_json = json.dumps(detail_item.get("data", {}), ensure_ascii=False)
-                
-                detail_data.append({
-                    "id": str(boe_header_id),  # 确保 id 是字符串类型
-                    "report": detail_json  # report 字段将自动识别为 CLOB 类型
-                })
+            # 过滤空数据或无效数据
+            if self._is_empty_detail(detail_item):
+                boe_no = detail_item.get('boeNo', 'unknown')
+                logger.info(f"跳过空数据：boeNo={boe_no} 单据详情数据为空或无效，不写入数据库")
+                return False
             
-            if not detail_data:
-                logger.warning("没有有效的单据详情数据需要写入数据库")
-                return True
-            
-            logger.info(f"开始将 {len(detail_data)} 条单据详情数据写入数据库表 {table_name}")
-            
-            # 使用数据库管理器写入数据
-            # 注意：需要确保 report 字段被识别为 CLOB 类型
-            # 在 database_manager.py 中已经有对 REPORTS 字段的特殊处理，但这里是 report（小写）
-            # 我们可以通过字段名映射来确保使用 CLOB
+            boe_header_id = detail_item.get("boeHeaderId")
+            if not boe_header_id:
+                logger.warning(f"详情数据缺少 boeHeaderId，跳过: {detail_item.get('boeNo', 'unknown')}")
+                return False
+
+            detail_json = json.dumps(detail_item.get("data", {}), ensure_ascii=False)
+
+            detail_data = {
+                "id": str(boe_header_id), 
+                "report": detail_json
+            }
+
             success = self.db_manager.auto_create_and_save_data(
-                detail_data,
+                [detail_data],  # 将单条数据包装成列表
                 table_name,
                 if_exists='append'
             )
-            
+
             if success:
-                logger.info(f"成功将 {len(detail_data)} 条单据详情数据写入数据库表 {table_name}")
+                logger.debug(
+                    f"成功写入单条单据详情数据 boeNo={detail_item.get('boeNo', 'unknown')} 到数据库表 {table_name}")
             else:
-                logger.error(f"写入单据详情数据到数据库表 {table_name} 失败")
+                logger.error(
+                    f"写入单条单据详情数据 boeNo={detail_item.get('boeNo', 'unknown')} 到数据库表 {table_name} 失败")
             return success
         except Exception as e:
-            logger.error(f"保存单据详情数据到数据库时发生错误: {e}")
+            logger.error(f"保存单条单据详情数据到数据库时发生错误: {e}")
             return False
 
     def _extract_page_info(self, soup: BeautifulSoup) -> Dict:
@@ -647,7 +715,7 @@ class BoeCrawler:
                 page += 1
 
                 # 添加延迟避免请求过快
-                time.sleep(1)
+                time.sleep(0.5)
 
             logger.info(f"爬取完成！共获取 {len(self.reports)} 条报账单记录")
             return True
@@ -674,16 +742,9 @@ class BoeCrawler:
                 logger.error("数据爬取失败")
                 return
 
-            # 串联处理全量单据与详情，仅保存所需数据
+            # 串联处理全量单据与详情，获取一条数据就写入一条
+            logger.info("开始处理全量单据与详情数据（逐条写入）...")
             self.process_bills_with_details()
-
-            # 将全量单据数据写入数据库
-            logger.info("开始将全量单据数据写入数据库...")
-            self.save_full_reports_to_database()
-
-            # 将单据详情数据写入数据库（只包含 id 和 report 两个字段）
-            logger.info("开始将单据详情数据写入数据库...")
-            self.save_details_to_database()
 
             end_time = time.time()
             duration = end_time - start_time
