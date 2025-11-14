@@ -158,8 +158,5 @@ RUN apt-get remove -y build-essential gcc g++ libc6-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# 健康检查 - 验证关键组件
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import jaydebeapi, selenium, pandas; print('Health check passed'); import sys; sys.exit(0)"
 
 CMD ["/bin/bash"]
